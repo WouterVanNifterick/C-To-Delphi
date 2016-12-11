@@ -7,8 +7,8 @@ It contains a split view, with C on the left and Delphi on the right.
 The Delphi code gets updated in realtime when you edit the C code.
 The editors are kept in sync, so you can easily find how a specific piece of code was converted.
 
-* **Syntax checks** on the generated code can be done using DelphiAST
-* You can even **run** the code using DWS by pressing F9
+* The **Syntax checks** of the generated code is verified. (uses DelphiAST)
+* You can even **run** the generated code by pressing F9 (uses DWS)
 
 * You can drag/drop multiple C files to the application. It'll find the .h files that belong to it, and convert all to .pas files in the same folder.
 
@@ -22,3 +22,5 @@ The editors are kept in sync, so you can easily find how a specific piece of cod
 * Converts 1 and 2 dimensional arrays
 * Converts many other common routines to Delphi equivalents (strcpy,strcat,strlen,printf,argv,argc,etc)
 * Converts classes
+
+![Screenshot](https://raw.githubusercontent.com/WouterVanNifterick/C-To-Delphi/master/C-To-Delphi-0.9.0.png)
