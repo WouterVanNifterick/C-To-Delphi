@@ -1,5 +1,6 @@
 # C-To-Delphi
 
+## Description
 This tool will convert most of your standard C code. .
 
 It contains a split view, with C on the left and Delphi on the right.
@@ -11,7 +12,7 @@ The editors are kept in sync, so you can easily find how a specific piece of cod
 
 * You can drag/drop multiple C files to the application. It'll find the .h files that belong to it, and convert all to .pas files in the same folder.
 
-Features:
+## Features:
 * If function main exists, a program will be generated. Otherwise a pascal unit with interface/implementation sections.
 * Converts routines and arguments
 * Converts for loops
