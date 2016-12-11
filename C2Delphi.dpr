@@ -21,6 +21,7 @@ uses
 begin
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
+  Application.Title := 'C to Delphi';
   TStyleManager.TrySetStyle('Charcoal Dark Slate');
   Application.CreateForm(TfrmMain, frmMain);
   Application.Run;

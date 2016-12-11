@@ -2,8 +2,8 @@ object frmMain: TfrmMain
   Left = 0
   Top = 0
   Caption = 'C to Delphi'
-  ClientHeight = 1058
-  ClientWidth = 1778
+  ClientHeight = 833
+  ClientWidth = 1339
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -16,12 +16,11 @@ object frmMain: TfrmMain
   PixelsPerInch = 96
   TextHeight = 13
   object Splitter1: TSplitter
-    Left = 1042
+    Left = 793
     Top = 21
     Width = 8
-    Height = 913
+    Height = 688
     ResizeStyle = rsUpdate
-    ExplicitLeft = 793
     ExplicitTop = 0
     ExplicitHeight = 1058
   end
@@ -29,7 +28,7 @@ object frmMain: TfrmMain
     Left = 241
     Top = 21
     Width = 8
-    Height = 913
+    Height = 688
     ResizeStyle = rsUpdate
     ExplicitLeft = 162
     ExplicitTop = -11
@@ -37,20 +36,21 @@ object frmMain: TfrmMain
   end
   object Splitter3: TSplitter
     Left = 0
-    Top = 934
-    Width = 1778
+    Top = 709
+    Width = 1339
     Height = 8
     Cursor = crVSplit
     Align = alBottom
     ResizeStyle = rsUpdate
     ExplicitLeft = 8
     ExplicitTop = 939
+    ExplicitWidth = 1778
   end
   object BCEditor1: TBCEditor
     Left = 249
     Top = 21
-    Width = 793
-    Height = 913
+    Width = 544
+    Height = 688
     Cursor = crIBeam
     ActiveLine.Indicator.Visible = False
     Align = alLeft
@@ -378,10 +378,10 @@ object frmMain: TfrmMain
     WordWrap.Width = wwwPage
   end
   object BCEditor2: TBCEditor
-    Left = 1050
+    Left = 801
     Top = 21
-    Width = 728
-    Height = 913
+    Width = 538
+    Height = 688
     Cursor = crIBeam
     ActiveLine.Indicator.Visible = False
     Align = alClient
@@ -479,7 +479,7 @@ object frmMain: TfrmMain
   object SearchBox1: TSearchBox
     Left = 0
     Top = 0
-    Width = 1778
+    Width = 1339
     Height = 21
     Align = alTop
     TabOrder = 2
@@ -490,7 +490,7 @@ object frmMain: TfrmMain
     Left = 0
     Top = 21
     Width = 241
-    Height = 913
+    Height = 688
     Align = alLeft
     AutoExpand = True
     Indent = 19
@@ -501,8 +501,8 @@ object frmMain: TfrmMain
   end
   object ListBox1: TListBox
     Left = 0
-    Top = 942
-    Width = 1778
+    Top = 717
+    Width = 1339
     Height = 97
     Align = alBottom
     ItemHeight = 13
@@ -511,8 +511,8 @@ object frmMain: TfrmMain
   end
   object StatusBar1: TStatusBar
     Left = 0
-    Top = 1039
-    Width = 1778
+    Top = 814
+    Width = 1339
     Height = 19
     Panels = <
       item

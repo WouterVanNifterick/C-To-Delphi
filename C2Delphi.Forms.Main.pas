@@ -2,8 +2,8 @@
 
 interface
 
-{.$DEFINE USE_DELPHIAST}
-{.$DEFINE USE_DWS}
+{$DEFINE USE_DELPHIAST}
+{$DEFINE USE_DWS}
 
 uses
   Winapi.Windows,
@@ -237,10 +237,10 @@ begin
   dws:=TDelphiWebScript.Create(nil);
 {$ENDIF}
   CFileName := '';
-  BCEditor1.Highlighter.LoadFromFile('c:\dev\lib\Bone\TBCEditor\Highlighters\c++.json');
-  BCEditor1.Highlighter.Colors.LoadFromFile('c:\dev\lib\Bone\TBCEditor\Colors\Monokai.json');
-  BCEditor2.Highlighter.LoadFromFile('c:\dev\lib\Bone\TBCEditor\Highlighters\object pascal.json');
-  BCEditor2.Highlighter.Colors.LoadFromFile('c:\dev\lib\Bone\TBCEditor\Colors\Monokai.json');
+  BCEditor1.Highlighter.LoadFromFile('Highlighters\c++.json');
+  BCEditor1.Highlighter.Colors.LoadFromFile('Colors\Monokai.json');
+  BCEditor2.Highlighter.LoadFromFile('Highlighters\object pascal.json');
+  BCEditor2.Highlighter.Colors.LoadFromFile('Colors\Monokai.json');
 //  BCEditor2.Highlighter.LoadFromFile('c:\dev\lib\Bone\TBCEditor\Highlighters\object pascal.json');
   DragAcceptFiles( Handle, True ) ;
   BCEditor1Change(nil);
