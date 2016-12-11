@@ -47,7 +47,7 @@ uses
 {$ENDIF}
 
   WvN.Pascal.Model,
-  WvN.Pascal.CReader
+  WvN.Pascal.CReader, Vcl.Menus
   ;
 
 
@@ -70,6 +70,8 @@ type
     Splitter3: TSplitter;
     ListBox1: TListBox;
     StatusBar1: TStatusBar;
+    PopupMenu1: TPopupMenu;
+    Run1: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure BCEditor1SelectionChanged(Sender: TObject);
     procedure  BCEditor1Change(Sender:TObject);

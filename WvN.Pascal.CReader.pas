@@ -299,7 +299,7 @@ begin
   if SameText(s,'long int')    then Exit('LongInt');
   if SameText(s,'long double') then Exit('Extended');
   if SameText(s,'__int64') then Exit('Int64');
-  if SameText(s,'void') then Exit('nil');
+  if SameText(s,'void') then Exit('');
   if SameText(s,'void*') then Exit('Pointer');
   if SameText(s,'char*') then Exit('PAnsiChar');
   if SameText(s,'wchar_t*') then Exit('PWideChar');
