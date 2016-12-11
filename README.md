@@ -6,8 +6,8 @@ It contains a split view, with C on the left and Delphi on the right.
 The Delphi code gets updated in realtime when you edit the C code.
 The editors are kept in sync, so you can easily find how a specific piece of code was converted.
 
-* **Syntax checks** on the generated code can be done using DelphiAST (undefine USE_DELPHIAST if you don't have it installed).
-* You can even **run** the code using DWS by pressing F9 (undefine USE_DWS if you don't have it installed)
+* **Syntax checks** on the generated code can be done using DelphiAST
+* You can even **run** the code using DWS by pressing F9
 
 * You can drag/drop multiple C files to the application. It'll find the .h files that belong to it, and convert all to .pas files in the same folder.
 
@@ -20,3 +20,4 @@ Features:
 * Converts enums
 * Converts 1 and 2 dimensional arrays
 * Converts many other common routines to Delphi equivalents (strcpy,strcat,strlen,printf,argv,argc,etc)
+* Converts classes
