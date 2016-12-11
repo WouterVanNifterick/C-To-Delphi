@@ -3,6 +3,8 @@
 ## Description
 This tool will convert most of your standard C code. .
 
+![Download](https://github.com/WouterVanNifterick/C-To-Delphi/releases "Download")
+
 It contains a split view, with C on the left and Delphi on the right.
 The Delphi code gets updated in realtime when you edit the C code.
 The editors are kept in sync, so you can easily find how a specific piece of code was converted.
