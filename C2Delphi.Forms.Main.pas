@@ -88,6 +88,8 @@ type
     procedure UpdateTree;
     procedure ShowElement(Sender:TObject; rt: TPascalElement);
     function ReadCCodeFromFile(cfn: string):string;
+    procedure GetRangeSource(const text: string; e: TPascalElement; out p1,p2: TBCEditorTextPosition);
+    procedure GetRangeRender(const text: string; e: TPascalElement; out p1,p2: TBCEditorTextPosition);
   public
     CFileName:string;
     Pas:WvN.Pascal.Model.TPascalUnit;
@@ -173,19 +175,33 @@ begin
   BCEditor2.Text := pas.toPascal;
 end;
 
+procedure TfrmMain.GetRangeSource(const text: string; e: TPascalElement; out p1,p2: TBCEditorTextPosition);
+begin
+  p1 := getPosition(Text, e.Sourceinfo.Position);
+  p2 := getPosition(Text, e.Sourceinfo.Position + e.Sourceinfo.Length);
+end;
+
+procedure TfrmMain.GetRangeRender(const text: string; e: TPascalElement; out p1,p2: TBCEditorTextPosition);
+begin
+  p1 := getPosition(Text, e.Renderinfo.Position);
+  p2 := getPosition(Text, e.Renderinfo.Position + e.Renderinfo.Length);
+end;
+
+
 procedure TfrmMain.BCEditor2CaretChanged(ASender: TObject; X, Y: Integer);
 var c:TClassdef;e:TPascalElement;
   p1,p2:tbceditortextposition;
+  text:string;
 begin
   StatusBar1.Panels[4].Text := Format('[Line:%d,Col%d]', [Y,X]);
   if pas=nil then
     Exit;
 
+  text := BCEDitor2.Text;
   for c in pas.Classes do
     for e in c.Methods do
     begin
-      p1 := getPosition(BCEDitor2.Text, e.Renderinfo.Position);
-      p2 := getPosition(BCEDitor2.Text, e.Renderinfo.Position+e.Renderinfo.Length);
+      GetRangeRender(text, e, p1, p2);
       if InRange(Y,p1.Line, p2.Line) then
       begin
         ShowElement(ASender,e);
@@ -196,8 +212,7 @@ begin
 
   for e in pas.GlobalArrays1D do
   begin
-    p1 := getPosition(BCEDitor2.Text, e.Renderinfo.Position);
-    p2 := getPosition(BCEDitor2.Text, e.Renderinfo.Position+e.Renderinfo.Length);
+    GetRangeRender(text, e, p1, p2);
     if InRange(Y,p1.Line, p2.Line) then
     begin
       ShowElement(ASender,e);
@@ -208,8 +223,7 @@ begin
 
   for e in pas.GlobalArrays2D do
   begin
-    p1 := getPosition(BCEDitor2.Text, e.Renderinfo.Position);
-    p2 := getPosition(BCEDitor2.Text, e.Renderinfo.Position+e.Renderinfo.Length);
+    GetRangeRender(text, e, p1, p2);
     if InRange(Y,p1.Line, p2.Line) then
     begin
       ShowElement(ASender,e);
@@ -315,6 +329,7 @@ begin
     ListBox1.Items.Add(prog.Msgs.AsInfo);
   end;
 end;
+
 {$ELSE}
 procedure TfrmMain.Run;
 begin
@@ -487,43 +502,40 @@ end;
 procedure TfrmMain.BCEditor1CaretChanged(ASender: TObject; X, Y: Integer);
 var c:TClassdef;e:TPascalElement;
   p1,p2:tbceditortextposition;
+  text:string;
 begin
   if pas=nil then
     Exit;
 
+  text := BCEditor1.Text;
+
   for c in pas.Classes do
     for e in c.Methods do
     begin
-      p1 := getPosition(BCEDitor1.Text, e.Sourceinfo.Position);
-      p2 := getPosition(BCEDitor1.Text, e.Sourceinfo.Position+e.Sourceinfo.Length);
+      GetRangeSource(text, e, p1, p2);
       if InRange(Y,p1.Line, p2.Line) then
       begin
         ShowElement(ASender,e);
-        BCEditor1.Refresh;
         Exit;
       end;
     end;
 
   for e in pas.GlobalArrays1D do
   begin
-    p1 := getPosition(BCEDitor1.Text, e.Sourceinfo.Position);
-    p2 := getPosition(BCEDitor1.Text, e.Sourceinfo.Position+e.Sourceinfo.Length);
+    GetRangeSource(text, e, p1, p2);
     if InRange(Y,p1.Line, p2.Line) then
     begin
       ShowElement(ASender,e);
-      BCEditor1.Refresh;
       Exit;
     end;
   end;
 
   for e in pas.GlobalArrays2D do
   begin
-    p1 := getPosition(BCEDitor1.Text, e.Sourceinfo.Position);
-    p2 := getPosition(BCEDitor1.Text, e.Sourceinfo.Position+e.Sourceinfo.Length);
+    GetRangeSource(text, e, p1, p2);
     if InRange(Y,p1.Line, p2.Line) then
     begin
       ShowElement(ASender,e);
-      BCEditor1.Refresh;
       Exit;
     end;
   end;
@@ -537,7 +549,11 @@ begin
   tl := BCEditor2.TopLine;
   c := BCEditor1.Text;
   pas := c_to_pas(c,t,BCEditor1.Hint);
-  Caption := pas.Name + ' - ' + Application.Title;
+
+  Caption := Application.Title;
+  if Pas.name <> '' then
+    Caption := pas.Name + ' - ' + Caption;
+
   UpdateTree;
 
   BCEditor2.Text := pas.toPascal;
