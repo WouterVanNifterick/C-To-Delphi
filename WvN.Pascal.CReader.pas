@@ -361,7 +361,7 @@ begin
   // varname : test
   // vartype : int
   // expr    : 5 * 5 + xxx
-  m := TRegEx.Match(c,'^(?<indent>\s*)(?<vartype>'+rxType+')\s+(?<varname>'+rxID+')\s*=\s*(?<expr>.*)\s*;',[roSingleLine]);
+  m := TRegEx.Match(c,'^(?<indent>\s*)(?<vartype>'+rxType+')\s+(\*)?(?<varname>'+rxID+')\s*=\s*(?<expr>.*)\s*;',[roSingleLine]);
   if m.Success then
   begin
     Result := True;

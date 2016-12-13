@@ -377,7 +377,7 @@ begin
         else
           if Indent then
             // switched from list of consts to vars
-            Result := Result.Trim + sLineBreak + sLineBreak + cDirPascal[Items[I].Dir]
+            Result := Result.Trim + sLineBreak +'' + sLineBreak +'' + cDirPascal[Items[I].Dir]
           else
             Result := Result.Trim + cDirPascal[Items[I].Dir];
 
@@ -397,7 +397,7 @@ begin
         begin
           Result := Result + Esc(Items[i].name.Trim) + ', ';
           if align then
-            Result := Result + sLineBreak;
+            Result := Result + sLineBreak+'';
           continue;
         end;
 
@@ -429,11 +429,8 @@ begin
 
     // add a separator, unless it's the last argument
     if i < Count - 1 then
-//      if Result[high(Result)]<>';' then
         Result := Result + ';';
 
-    if Indent then
-        Result := Result + sLineBreak+'  ';
 
   end;
 
@@ -953,9 +950,20 @@ end;
 { TArrayDef }
 
 function TArrayDef1D.ToPascal: string;
-var elms : string;
+var elms : string; i:integer; it:TArray<string>;
 begin
-  elms := ''.Join(', ', Items); // concat all elements into a comma separated string
+  setlength(it,length(items));
+  for i := 0 to high(items) do
+  begin
+    it[i] := items[i];
+    if it[i].EndsWith('.') then
+      it[i] := it[i] + '0';
+    if it[i].StartsWith('.') then
+      it[i] := '0'+it[i];
+
+  end;
+
+  elms := ''.Join(', ', it); // concat all elements into a comma separated string
   elms := TRegEx.Replace(elms,'0[xX]([\da-fA-F]+)' ,'\$\1',[ roMultiLine ]); // convert possible hex to pascal hex
   elms := elms.Replace('/*','{').Replace('*/','}');
   elms := WrapText(elms,sLineBreak+'   ',[','],70); // wrap long lines

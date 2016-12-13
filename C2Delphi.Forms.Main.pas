@@ -26,6 +26,7 @@ uses
   Vcl.ActnList,
   Vcl.PlatformDefaultStyleActnCtrls,
   Vcl.ActnMan,
+  Vcl.Menus,
 
   BCEditor.Types,
   BCEditor.Editor.Base,
@@ -47,7 +48,7 @@ uses
 {$ENDIF}
 
   WvN.Pascal.Model,
-  WvN.Pascal.CReader, Vcl.Menus
+  WvN.Pascal.CReader
   ;
 
 
