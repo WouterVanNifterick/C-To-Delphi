@@ -238,101 +238,8 @@ begin
       Result := Result + aString[I];
 
   for I := Length(Result) downto 1 do
-    //    if Result[I]=' ' then
     if CharInSet(Result[I],Chars) then
       Delete(Result,I,1);
-end;
-
-
-
-
-
-procedure FixMultilineStatements(var sl: TStringList);
-var
-  i,j,c: Integer;
-  ch:char;s:String;
-  cPos: Integer;
-const
-  DUMMY='nnnnn';
-begin
-  // get rid of multi-line statements
-  {
-  for i := 0 to sl.Count - 1 do
-  begin
-    if sl[i].EndsWith(',') then sl[i] := sl[i] + DUMMY;
-    if sl[i].EndsWith('+') then sl[i] := sl[i] + DUMMY;
-    if sl[i].EndsWith('-') then sl[i] := sl[i] + DUMMY;
-    if sl[i].EndsWith('*') then sl[i] := sl[i] + DUMMY;
-    if sl[i].EndsWith('/') then sl[i] := sl[i] + DUMMY;
-    if sl[i].EndsWith('(') then sl[i] := sl[i] + DUMMY;
-  end;
-  sl.Text := sl.Text.Replace(DUMMY + sLineBreak, DUMMY, [rfReplaceAll]);
-  sl.Text := sl.Text.Replace(DUMMY, sLineBreak, [rfReplaceAll]);
-   }
-
-  sl.Text := Sl.Text.Replace(#10,'');
-  sl.Text := Sl.Text.Replace(#13,sLineBreak);
-
-
-   for ch in [',','+','-','*','/'] do
-     sl.Text := sl.Text.Replace(ch+sLineBreak,ch+' ',[rfReplaceAll]);
-
-//  sl.Text := sl.Text.Replace('){' + sLineBreak, ')' + sLineBreak + '{', [rfReplaceAll]);
-  sl.Text := sl.Text.Replace('{', sLineBreak + '{' +sLineBreak, [rfReplaceAll]);
-  sl.Text := sl.Text.Replace('}', sLineBreak + '}' +sLineBreak, [rfReplaceAll]);
-  sl.Text := sl.Text.Replace(';', ';' +'<LINEBREAK>  ', [rfReplaceAll]);
-
-  for i := 0 to sl.Count-1 do
-    if sl[I].Trim.StartsWith('for') then
-      sl[I] := sl[I].Replace('<LINEBREAK>  ','');
-
-  sl.Text := sl.Text.Replace('<LINEBREAK>', sLineBreak, [rfReplaceAll]);
-
-  sl.Text := sl.Text.Replace( sLineBreak + sLineBreak + sLineBreak, sLineBreak + sLineBreak, [rfReplaceAll]);
-
-  c := 0;
-  for i := 0 to sl.Count-1 do
-  begin
-    s := sl[i];
-    if s.Trim.ToLower.StartsWith('if') then
-      for j := 1 to length(s) do
-      begin
-        if s[j]='(' then
-          inc(c);
-        if s[j]=')' then
-        begin
-          dec(c);
-          if c=0 then
-            insert('@@LINEBREAK@@    ',s,j+1);
-          sl[i] := s;
-        end;
-      end;
-  end;
-
-  for i := 0 to sl.Count-1 do
-  begin
-    s := sl[i].Trim;
-    cPos := s.IndexOf('{');
-    if (cPos>0) and (cPos<s.Length) then
-    begin
-      insert('@@LINEBREAK@@',s,cPos+1);
-      sl[i] := s;
-    end;
-  end;
-
-
-  for i := 0 to sl.Count-1 do
-  begin
-    s := sl[i].Trim;
-    cPos := s.IndexOf('}');
-    if cPos>0 then
-    begin
-      insert('@@LINEBREAK@@',s,cPos+2);
-      sl[i] := s;
-    end;
-  end;
-
-  sl.Text := sl.Text.Replace('@@LINEBREAK@@',sLineBreak, [rfReplaceAll]);
 end;
 
 
@@ -420,7 +327,7 @@ begin
 end;
 
 function TVariableList.ToPascal(indent:Boolean): String;
-var longest,i:integer;//  v:TVariable;
+var longest,i:integer;
   align:boolean;
 begin
   Result := '';
@@ -456,11 +363,6 @@ begin
     or (Items[I - 1].Dir   <> Items[I].Dir)
     or (Items[I - 1].&Type <> Items[I].&Type) then
     begin
-//      if Items[I].Dir <> TDir.none then
-//        if Indent then
-//          if Result.Trim <> '' then
-//          Result := Result + sLineBreak;
-
       if Indent then
         if I = 0 then
           if Items[I].Dir = TDir.none then
@@ -539,8 +441,6 @@ begin
 
   if Indent then
   begin
-//    if not (Result.StartsWith('var') or Result.StartsWith('const')) then
-//      Result := 'var'+sLineBreak+'  '+Result;
     if not Result.Trim.EndsWith(';') then
       Result := Result.Trim + ';';
 
@@ -614,14 +514,10 @@ begin
   if sl.ToString.Trim<>';' then
     sl.Append(';');
 
-  if &Override then
-    sl.Append('override;');
-  if &Overload then
-    sl.Append('overload;');
-  if &Inline then
-    sl.Append('inline;');
-  if &Static then
-    sl.Append('static;');
+  if &Override then sl.Append('override;');
+  if &Overload then sl.Append('overload;');
+  if &Inline   then sl.Append('inline;');
+  if &Static   then sl.Append('static;');
 
   Result := sl.ToString;
   sl.Free;
@@ -647,15 +543,11 @@ begin
     sl.Append(':'+Self.ReturnType);
 
   sl.AppendLine(';');
-//  sl.Remove(sl.Length-1,1);
   if self.LocalVars.Count>0 then
     sl.Append( LocalVars.ToPascal(true) );
 
   sl.AppendLine( 'begin');
   Code.Cleanup;
-
-  //  for c in Code.Lines do
-//    sl.AppendLine( c );
 
   sl.AppendLine(code.ToPascal);
 
@@ -747,11 +639,9 @@ begin
     end;
     sl.Add( vars.ToPascal(true).TrimRight  );
   end;
+
   for m in Methods  do
-  begin
     sl.Add(m.ToDeclarationPascal);
-//    sl.Add('');
-  end;
 
 
   if self.Kind <> &unit then
@@ -865,7 +755,6 @@ begin
     end;
   end;
   Setlength(lines,J);
-//  Align;
 end;
 
 constructor TCode.Create(c: TArray<string>);
@@ -975,7 +864,6 @@ begin
 
   sl.Add(usesListIntf.ToPascal);
 
-//  sl.Add('type');
   for e in enums do
     sl.Add( e.ToPascal );
 
