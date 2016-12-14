@@ -236,15 +236,17 @@ begin
 end;
 
 procedure TfrmMain.BCEditor2Change(Sender: TObject);
-var fn{$IFDEF USE_DELPHIAST},t{$ENDIF}:string;
-begin
-  fn := Pas.Name+'.pas';
-  BCEditor2.Lines.SaveToFile(fn);
-
 {$IFDEF USE_DELPHIAST}
+var fn,t:string;
+{$ENDIF}
+begin
+{$IFDEF USE_DELPHIAST}
+  fn := TPath.Combine(TPath.GetTempPath, Pas.Name+'_tmp.pas');
+  BCEditor2.Lines.SaveToFile(fn);
   t := Parse(fn,ex);
   ListBox1.Clear;
   ListBox1.Items.Add(t);
+  TFile.Delete(fn);
 {$ENDIF}
 end;
 
@@ -427,8 +429,11 @@ begin
   begin
     DragQueryFile(msg.Drop, cnt, fileName, MAXFILENAME);
     cfn := fileName;
-    p := c_to_pas(ReadCCodeFromFile(cfn),t,changefileext(ExtractFilename(cfn),''));
-    TFile.WriteAllText( ChangeFileExt(fileName,'.pas'), p.toPascal);
+    if fileCount>1 then
+    begin
+      p := c_to_pas(ReadCCodeFromFile(cfn),t,changefileext(ExtractFilename(cfn),''));
+      TFile.WriteAllText( ChangeFileExt(fileName,'.pas'), p.toPascal);
+    end;
   end;
 
   if fileCount>0 then

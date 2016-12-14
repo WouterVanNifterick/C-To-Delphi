@@ -3,7 +3,7 @@
         <ProjectGuid>{3A5D71F7-635F-4E30-A692-1E2E1EC8BE4F}</ProjectGuid>
         <MainSource>C2Delphi.dpr</MainSource>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Debug</Config>
+        <Config Condition="'$(Config)'==''">Release</Config>
         <TargetedPlatforms>1</TargetedPlatforms>
         <AppType>Application</AppType>
         <FrameworkType>VCL</FrameworkType>

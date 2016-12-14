@@ -397,13 +397,13 @@ begin
         begin
           Result := Result + Esc(Items[i].name.Trim) + ', ';
           if align then
-            Result := Result + sLineBreak+'';
+            Result := Result + sLineBreak+'  ';
           continue;
         end;
 
 
     if Align then
-      Result := Result + '  '+copy(Esc(Items[i].name)+ StringOfChar(' ',longest) ,1,longest)
+      Result := Result +copy(Esc(Items[i].name)+ StringOfChar(' ',longest) ,1,longest)
     else
       Result := Result + Esc(Items[i].name);
 
@@ -411,7 +411,7 @@ begin
     begin
       Result := Result + ' : ';
 
-      if Items[I].&Type='^nil' then
+      if Items[I].&Type='^' then
         Result := Result + 'pointer'
       else
       begin

@@ -22,7 +22,7 @@ const
   PARSED_MARKER_STR = PARSED_MARKER+PARSED_MARKER+PARSED_MARKER;
 
   rxID     = '(\*?)[a-zA-Z_\$][\w_]*(\*?)';
-  rxT = '(\*?)(?:unsigned\s+)?(?:long\s+)?[a-zA-Z_\$][\w_]*(\*?)';
+  rxT = '(\*?)(?:unsigned|signed\s+)?(?:long\s+)?[a-zA-Z_\$][\w_]*(\*?)';
 //  rxType   = '('+rxT+')|('+rxT+'<\s*'+rxT+'\s*>)';
   rxType   = rxT;
 //  rxNum    = '\d*';
@@ -53,6 +53,55 @@ const
 
 type
   TLoc=(None,InStringQ1,InStringQ2,InLineComment,InMultiLineComment);
+
+function StripComments(aCCode:string):string;
+var
+  loc:TLoc;
+  i,j: Integer;
+begin
+  Loc := None;
+
+  setlength(result,length(aCCode));
+
+  I := 1; J:=1;
+  while I<=aCCode.length do
+  begin
+    case loc of
+      None:
+        begin
+          if I < aCCode.Length-1 then
+            if aCCode[I] = '/' then
+              if aCCode[I + 1] = '/' then
+                Loc := InLineComment;
+
+          if I < aCCode.Length then
+            if aCCode[I] = '/' then
+              if aCCode[I + 1] = '*' then
+                Loc := InMultiLineComment;
+
+        end;
+
+      InLineComment:
+        if CharInSet(aCCode[I], [#13, #10]) then
+          Loc := None;
+
+      InMultiLineComment:
+        if I > 1 then
+          if aCCode[I - 1] = '*' then
+            if aCCode[I] = '/' then
+              loc := None;
+
+    end;
+
+    if loc = None then
+    begin
+      Result[J] := aCCode[I];
+      Inc(J);
+    end;
+    inc(I);
+  end;
+  Setlength(Result,J);
+end;
 
 function ReplaceOutsideCommentsAndStrings(aCCode,aSearch,aReplace:string):string;
 var
@@ -525,6 +574,9 @@ var m:TMatch; l:string;
   expr: string;
 begin
   c := 0;
+  // replace lines that contain a variable declaration.
+  // when it also contains an assignment, leave the assignment,
+  // otherwise remove the line
   setlength(linesAr,length(lines));
   for I := 0 to high(lines) do
   begin
@@ -542,15 +594,24 @@ begin
       end;
     end;
   end;
+
+  // strip emtpy lines at then end
+  i := length(linesAr)-1;
+  while (i>=0) and (linesAr[i].Trim='') do
+  begin
+    setlength(linesAr,i);
+    dec(i);
+  end;
+
   setlength(linesAr,c);
   lines := linesAr;
 
   if Length(Lines)>0 then
   begin
-      l := Lines[high(Lines)];
-      lines[high(Lines)] := TRegEx.Replace(l,'^(\s*)Exit\s*\((?<expr>.*)\)\s*[;]?\s*;?$','\1Result := \2;') ;
-      l := Lines[high(Lines)];
-      lines[high(Lines)] := TRegEx.Replace(l,'^(\s*)return\s*(?<expr>[^;]+)\s*;?$','\1Result := \2;') ;
+    l := Lines[high(Lines)];
+    lines[high(Lines)] := TRegEx.Replace(l,'^(\s*)Exit\s*\((?<expr>.*)\)\s*[;]?\s*;?$','\1Result := \2;') ;
+    l := Lines[high(Lines)];
+    lines[high(Lines)] := TRegEx.Replace(l,'^(\s*)return\s*(?<expr>[^;]+)\s*;?$','\1Result := \2;') ;
   end;
 
   for I := 0 to high(lines) do
@@ -1752,6 +1813,7 @@ begin
   Result.usesListIntf.&Unit := Result;
   Result.usesListImpl.&Unit := Result;
   s := aCCode;
+  s := StripComments(s);
   FixTypes(s);
 
   t := s;
