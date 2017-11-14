@@ -80,8 +80,6 @@ type
     edPascalCode: TSynEdit;
     SynCppSyn1: TSynCppSyn;
     SynPasSyn1: TSynPasSyn;
-    edPreProcessed: TSynEdit;
-    spl1: TSplitter;
     procedure FormCreate(Sender: TObject);
     procedure edCCodeSelectionChanged(Sender: TObject);
     procedure  edCCodeChange(Sender:TObject);
@@ -803,7 +801,6 @@ begin
            frmMain.Caption := p.Name + ' - ' + Caption;
 
          UpdateTree;
-         edPreProcessed.Text := t;
          edPascalCode.Text := pas.toPascal;
          edPascalCode.TopLine := tl;
          edPascalCode.Enabled := True;
