@@ -2,6 +2,8 @@ unit WvN.Pascal.Model;
 
 interface
 
+uses Generics.Collections, Generics.Defaults, Classes, Windows;
+
 const
 Keywords:array[0..65] of string=
 ('at','and','array','as','asm','begin','case','class','const','constructor',
@@ -17,13 +19,13 @@ type
   TLanguage    = (Delphi,DWS);
   TDir         = (none,&in,&out,inout);
   TVisibility  = (&DefaultVisibility,&StrictPrivate,&Private,&Public,&Published);
-  TRoutineType = (&function,&procedure,&constructor);
+  TRoutineType = (&function,&procedure,&constructor,&destructor);
   TClassKind   = (&class,&record,&object,&unit);
 const
   cClassKind  : array[TClassKind] of string = ('class','record','object','unit');
   cDirPascal  : array[TDir] of string=('','const','out','var');
   cVisibility : array[TVisibility] of string=('','strict privateconst','private','public','published');
-  cRoutineType: array[TRoutineType] of string=('function','procedure','constructor');
+  cRoutineType: array[TRoutineType] of string=('function','procedure','constructor','destructor');
 
 type
   TPascalUnit=class;
@@ -34,54 +36,97 @@ type
     constructor Create(aPosition:integer; aLength:integer);
   end;
 
-  TPascalElement=class abstract
-    Name:String;
+  TPascalElement=class;
+{
+  IPascalElement=interface
+    procedure AddChild(const el:IPascalElement);
+    function GetChildren(Index: integer): TPascalElement;
+    function ChildIndexByName(const Name:string):integer;
+    function ToString:string;
+    function ToPascal:string;
+    function Count:integer;
+    procedure SetOwner(aOwner: IPascalElement);
+    function GetName: string;
+    property Children[Index:integer]:TPascalElement read GetChildren;
+    property Name:string read GetName ;
+  end;
+}
+  TPascalElement=class
+  private
+    function GetName: string;
+    procedure SetOwner(aOwner: TPascalElement);
+  protected
+    FChildren:TObjectList<TPascalElement>;
+    FOwner:TPascalElement;
+    FName : String;
+    FVisible:Boolean;
+    procedure AddChild(const el:TPascalElement);
+    function GetChildren(Index: integer): TPascalElement;
+  public
     Sourceinfo:TSourceInfo;
     Renderinfo:TSourceInfo;
+    function ChildIndexByName(const Name:string):integer;
+    function ToString:string;reintroduce;virtual;
+    function ToPascal:string;virtual;abstract;
+    function Count:integer;
+    procedure SetDefaultVisible;
+    property Owner:TPascalElement read FOwner;
+    constructor Create(aOwner:TPascalElement);virtual;
+    destructor Destroy; override;
+    property Children[Index:integer]:TPascalElement read GetChildren; default;
+    property Name:string read GetName write FName;
+    property Visible:Boolean read FVisible write FVisible;
   end;
 
-  TVariable=class
+  TVariable=class(TPascalElement)
+  strict private
+    FHasValue:Boolean;
+    FDir:TDir;
+    FType:string;
+    FValue:variant;
+    FVisibility:TVisibility;
+    FIsStatic:Boolean;
+    FComment:string;
   public
-    HasValue:Boolean;
-    Dir:TDir;
-    Name:string;
-    &Type:string;
-    Value:variant;
-    Visibility:TVisibility;
-    IsStatic:Boolean;
-    Comment:string;
-    constructor Create;overload;
-    constructor Create(aName:string; aType:string;aDir:TDir=TDir.none; aIsStatic:Boolean=false; aHasValue:Boolean=false; aValue:string=''; aComment:string='');overload;
+    constructor Create(AOwner:TPascalElement; aName:string; aType:string;aDir:TDir=TDir.none; aIsStatic:Boolean=false; aHasValue:Boolean=false; aValue:string=''; aComment:string=''); reintroduce;
+    function ToString:string;override;
     function ToPascal:String;
+
+    property HasValue:Boolean       read FHasValue;
+    property Dir:TDir               read FDir;
+    property &Type:string           read FType;
+    property Value:variant          read FValue;
+    property Visibility:TVisibility read FVisibility write FVisibility;
+    property IsStatic:Boolean       read FIsStatic;
+    property Comment:string         read FComment;
+
   end;
 
-  TVariableList=record
+  TVariableList=class(TPascalElement)
   public
-    Items:TArray<TVariable>;
-    procedure Clear;
-    procedure Add(v:TVariable);
     function getLongestName:integer;
     function ToPascal(Indent:Boolean):String;
-    function Count:integer;
-    class function CreateEmpty:TVariableList;static;
   end;
 
   TArrayDef1D=class(TPascalElement)
+  public
     itemType:string;
     rangeMin,rangeMax:string;
     Items:TArray<string>;
     function ToPascal:string;
+    function ToString:string;override;
   end;
 
   TArrayDef2D=class(TPascalElement)
+  public
     itemType:string;
     ranges:array[0..1] of
     record
       rangeMin,rangeMax:string;
     end;
     Items:TArray<TArray<string>>;
-
     function ToPascal:string;
+    function ToString:string;override;
   end;
 
   TEnumItem = record
@@ -93,22 +138,24 @@ type
   end;
 
   TEnumDef=class(TPascalElement)
+  public
     Items:TArray<TEnumItem>;
     function ToPascal:string;
   end;
 
-  TCode=record
+  TCode=class(TPascalElement)
   private
-    function GetCount: integer;
+    function GetLineCount: integer;
   public
-    Lines:TArray<string>;
-    constructor Create(c:TArray<string>);
+    Lines:TList<string>;
     procedure Add(const s:String);
     function ToPascal:String;
     procedure Cleanup;
     procedure Align;
-    property Count:integer read GetCount;
-    class function CreateEmpty:TCode;static;
+    destructor Destroy; override;
+    property LineCount:integer read GetLineCount;
+    constructor Create(aOwner:TPascalElement; c:TArray<string>);
+
   end;
 
   TRoutine=class(TPascalElement)
@@ -122,11 +169,13 @@ type
     &Overload:Boolean;
     &Inline:Boolean;
     &Static:Boolean;
+    &Virtual:Boolean;
     ClassName:string;
     Comment:string;
     Visibility:TVisibility;
 
     constructor Create(
+        aOwner:TPascalElement;
         aName:String;
         aClassName:string;
         aRoutineType:TRoutineType;
@@ -138,65 +187,102 @@ type
         aOverload:Boolean=false;
         aInline:Boolean=false;
         aStatic:Boolean=false;
+        aVirtual:Boolean=false;
         aComment:string='');
-
     procedure Cleanup;
+    function ToString:string;override;
     function ToDeclarationPascal:String;
     function ToImplementationPascal(aClassName:string):String;
+
   end;
 
   TClassDef=class(TPascalElement)
-    &Kind:TClassKind;
-    ParentType:string;
-    consts:TVariableList;
-    Vars:TVariableList;
-    Methods:TArray<TRoutine>;
-    IsPacked:boolean;
-    procedure Cleanup;
-    procedure AddRoutine(const m:TRoutine);
+  public
+    FKind:TClassKind;
+    FParentType:string;
+    FConsts:TVariableList;
+    FMembers:TVariableList;
+    FMethods:TArray<TRoutine>;
+    FIsPacked:boolean;
+    function AddRoutine(const m:TRoutine):boolean;
     function getMethodByName(const n:string):TRoutine;
     function ToPascalDeclaration:string;
     function ToPascalImplementation:string;
-    constructor Create;overload;
-    constructor Create(aTypename:string; aVars:TVariableList);overload;
+    function ToString:string;override;
+    constructor Create(aOwner:TPascalElement;aTypename:string; aMembers:TVariableList; aKind:TClassKind);
   end;
 
-  TUsesList=record
-  private
-    function getCount:integer;
+  TUsesListItem=class(TPascalElement)
+
+  end;
+
+  TUsesList=class(TPascalElement)
   public
-    Units:TArray<string>;
     &Unit:TPascalUnit;
-    constructor Create(aUnit:TPascalUnit);
-    procedure AddUnit(s:string);
+    constructor Create(aOwner:TPascalElement);override;
+    procedure AddUnit(const s: string);
     function ToPascal:string;
-    property Count:integer read getCount;
   end;
 
-  TPascalUnit=class
-    Name:String;
+  TCase=class(TPascalElement)
+  strict private
+    FCode:TCode;
+    procedure SetCode(const Value: TCode);
+  public
+    Id:string;
+    function ToPascal(aIndent:integer=6; aAlign:integer=0):string;
+    property Code:TCode read FCode write SetCode;
+
+  end;
+
+  TSwitch=class(TPascalElement)
+  public
+    Switch:string;
+    Cases:TArray<TCase>;
+    Indent:integer;
+    function ToPascal:string;override;
+  end;
+
+  TIfStatement=class(TPascalElement)
+  private
+    Condition,
+    IfTrue,
+    IfFalse : TCode;
+    constructor Create(aOwner:TPascalElement; aCondition, aIfTrue, aIfFalse : TCode);
+    function ToPascal:string;override;
+  end;
+
+  TPascalUnit=class(TPascalElement)
+  public
     usesListIntf:TUsesList;
     usesListImpl:TUsesList;
     Comments:TArray<string>;
     GlobalVars:TVariableList;
     GlobalArrays1D:TArray<TArrayDef1D>;
     GlobalArrays2D:TArray<TArrayDef2D>;
-    ImplementationVars:TVariableList;
     Enums:TArray<TEnumDef>;
     Classes:TArray<TClassDef>;
+    ImplementationVars:TVariableList;
     &Initialization:TCode;
     &Finalization:TCode;
-    procedure Cleanup;
+    CaseStatements:TArray<TSwitch>;
+    Defines:TStringList;
+    constructor Create(aOwner:TPascalElement);override;
+    destructor Destroy;override;
     function getClassByName(s:string):TClassDef;
     function AddClass(c:TClassDef):TClassDef;
-    constructor Create;
+    function ToString:string; override;
     function toPascal:string;
   end;
 
-  TLoop=record
+  TLoopOperator=(EQ,LT,LT_EQ,GT,GT_EQ);
+  TLoop=class(TPascalElement)
+  type
+    TDir=(up,down);
+  var
     IndexerVar:TVariable;
-    Op:(EQ,LT,LT_EQ,GT,GT_EQ);
-    Dir:(up,down);
+    Op:TLoopOperator;
+    Dir:TLoop.TDir;
     StartVal,EndVal:string;
     function toPascal:string;
   end;
@@ -205,7 +291,7 @@ function Esc(Keyword:string):string;
 
 implementation
 
-uses System.RegularExpressions, SysUtils, Classes, Math;
+uses System.RegularExpressions, SysUtils, Math;
 
 function Esc(Keyword:string):string;
 var
@@ -243,74 +329,51 @@ begin
 end;
 
 
-constructor TVariable.Create;
-begin
 
-end;
-
-constructor TVariable.Create(aName, aType: string;aDir:TDir=TDir.none;aIsStatic:Boolean=false; aHasValue:Boolean=false;aValue:string='';aComment:string='');
+constructor TVariable.Create(AOwner:TPascalElement; aName, aType: string;aDir:TDir=TDir.none;aIsStatic:Boolean=false; aHasValue:Boolean=false;aValue:string='';aComment:string='');
+var ix:integer;
 begin
-  Name     := aName.Trim;
-  &Type    := aType.Trim;
-  Dir      := aDir;
-  IsStatic := aIsStatic;
-  HasValue := aHasValue;
-  Value    := aValue.Trim;
-  Comment  := aComment;
+  inherited Create(AOwner);
+
+  FName     := aName.Trim;
+  FType    := aType.Trim;
+  FDir      := aDir;
+  FIsStatic := aIsStatic;
+  FHasValue := aHasValue;
+  FValue    := aValue.Trim;
+  FComment  := aComment;
+
+
+  if FHasValue then
+  if FType<>'' then
+  if FDir = TDir.&in then
+  begin
+    // found a const variable declaration, with a type.
+    if FType = 'integer'  then FType := '' else
+    if FType = 'double'   then FType := '' else
+    if FType = 'float'    then FType := '' else
+    if FType = 'single'   then FType := '' else
+    if FType = 'byte'     then FType := '' else
+    if FType = 'int64'    then FType := '' else
+    if FType = 'cardinal' then FType := '' else
+      FDir := TDir.inout;
+  end;
 end;
 
 function TVariable.ToPascal: String;
 begin
-  Result := Esc(Name);
-  if &type<>'' then
-    Result := Result + ':' + Esc(&Type);
+  Result := Esc(FName);
+  if FType<>''   then Result := Result + ':' + Esc(FType);
+  if FHasValue    then Result := Result + ' = '+ FValue;
+  if FComment<>'' then Result := Result + '{ '+FComment+' }';
+end;
 
-  if HasValue then
-    Result := Result + ' = '+ Value;
-
-  if Comment<>'' then
-    Result := Result + '{ '+Comment+' }';
+function TVariable.ToString: string;
+begin
+  REsult := FName + ': ' + FType;
 end;
 
 { TVariableList }
-
-procedure TVariableList.Add(v: TVariable);
-begin
-  setlength(Items,length(items)+1);
-
-
-  if v.HasValue then
-    if v.&Type<>'' then
-      if v.Dir = TDir.&in then
-  begin
-    // found a const variable declaration, with a type.
-    if v.&Type = 'integer'  then v.&Type := '' else
-    if v.&Type = 'double'   then v.&Type := '' else
-    if v.&Type = 'float'    then v.&Type := '' else
-    if v.&Type = 'single'   then v.&Type := '' else
-    if v.&Type = 'byte'     then v.&Type := '' else
-    if v.&Type = 'int64'    then v.&Type := '' else
-    if v.&Type = 'cardinal' then v.&Type := '' else
-    v.Dir := TDir.inout;
-  end;
-
-  Items[high(items)] := v;
-end;
-
-procedure TVariableList.Clear;
-begin
-  Items := [];
-end;
-
-function TVariableList.Count: integer;
-begin
-  Result := Length(self.Items);
-end;
-
-class function TVariableList.CreateEmpty: TVariableList;
-begin
-  setlength(Result.Items,0);
-end;
 
 function TVariableList.getLongestName: integer;
 var
@@ -319,7 +382,7 @@ begin
   Result := 0;
   for I := 0 to Count-1 do
   begin
-    l := length(esc(Items[I].Name));
+    l := length(esc(FChildren[I].Name));
     if l > Result then
       Result := l;
   end;
@@ -329,6 +392,7 @@ end;
 function TVariableList.ToPascal(indent:Boolean): String;
 var longest,i:integer;
   align:boolean;
+  Prev,Curr,Next:TVariable;
 begin
   Result := '';
   longest := getLongestName;
@@ -346,56 +410,65 @@ begin
   if self.Count<2 then
     Align := false;
 
+  Prev := nil;
+  Next := nil;
   // combine consecutive parameters of the same type wherever possible
   for i := 0 to Count - 1 do
   begin
+    if I > 0 then
+      Prev := TVariable( FChildren[i - 1] );
+    Curr := TVariable( FChildren[i    ] );
+    if I < Count-1 then
+      Next := TVariable( FChildren[i + 1] );
+
+
     if Indent then
       if (I=0)
-      or (Items[i - 1].Visibility <>
-          Items[i    ].Visibility) then
+      or (Prev.Visibility <>
+          Curr.Visibility) then
       begin
-        if Items[I].Visibility<>TVisibility.DefaultVisibility then
-          Result := Result + cVisibility[Items[I].Visibility] + sLineBreak+ '  ';
+        if Curr.Visibility<>TVisibility.DefaultVisibility then
+          Result := Result + cVisibility[Curr.Visibility] + sLineBreak+ '  ';
       end;
 
     // for the first in a series, write the direction if given
     if (I = 0)
-    or (Items[I - 1].Dir   <> Items[I].Dir)
-    or (Items[I - 1].&Type <> Items[I].&Type) then
+    or (Prev.Dir   <> Curr.Dir)
+    or (Prev.&Type <> Curr.&Type) then
     begin
       if Indent then
         if I = 0 then
-          if Items[I].Dir = TDir.none then
+          if Curr.Dir = TDir.none then
             if Result.Trim = '' then
               Result := cDirPascal[TDir.inout] + sLineBreak + '  '
             else
               Result := Result + cDirPascal[TDir.inout]  + sLineBreak + '  ';
 
-      if (I=0) or (Items[I - 1].Dir   <> Items[I].Dir) then
+      if (I=0) or (Prev.Dir   <> Curr.Dir) then
         if (I=0) then
-          Result := cDirPascal[Items[I].Dir]
+          Result := cDirPascal[Curr.Dir]
         else
           if Indent then
             // switched from list of consts to vars
-            Result := Result.Trim + sLineBreak +'' + sLineBreak +'' + cDirPascal[Items[I].Dir]
+            Result := Result.Trim + sLineBreak +sLineBreak +'' + cDirPascal[Curr.Dir]
           else
-            Result := Result.Trim + cDirPascal[Items[I].Dir];
+            Result := Result.Trim + cDirPascal[Curr.Dir];
 
 
       if not Indent then
         Result := Result + ' '
       else
-        if cDirPascal[Items[I].Dir] <> '' then
-          Result := Result + sLineBreak + '  ';
+        if cDirPascal[Curr.Dir] <> '' then
+          Result := Result.TrimRight + sLineBreak + '  ';
     end;
 
     // if the next argument is of another type or direction, write the type
     if i < Count - 1 then
-      if (Items[i + 1].dir = Items[i].dir) then
-        if (Items[i + 1].&Type = Items[i].&Type) then
-        if not Items[I].HasValue then
+      if (Next.dir = Curr.dir) then
+        if (Next.&Type = Curr.&Type) then
+        if not Curr.HasValue then
         begin
-          Result := Result + Esc(Items[i].name.Trim) + ', ';
+          Result := Result + Esc(Curr.FName.Trim) + ', ';
           if align then
             Result := Result + sLineBreak+'  ';
           continue;
@@ -403,35 +476,39 @@ begin
 
 
     if Align then
-      Result := Result +copy(Esc(Items[i].name)+ StringOfChar(' ',longest) ,1,longest)
+      Result := Result +copy(Esc(Curr.FName)+ StringOfChar(' ',longest) ,1,longest)
     else
-      Result := Result + Esc(Items[i].name);
+      Result := Result + Esc(Curr.FName);
 
-    if Items[i].&Type<>'' then
+    if Curr.&Type<>'' then
     begin
       Result := Result + ' : ';
 
-      if Items[I].&Type='^' then
+      if Curr.&Type='^' then
         Result := Result + 'pointer'
       else
       begin
-        if Items[I].Name.StartsWith('*') then
+        if Curr.FName.StartsWith('*') then
           Result := Result + '^';
 
-        Result := Result + Esc(Items[i].&Type);
+        Result := Result + Esc(Curr.&Type);
       end;
     end;
-    if Items[i].HasValue then
-      Result := Result + ' = '+ Items[i].Value;
 
-    if Items[i].Comment<>'' then
-      Result :=  Result + ' { '+ Items[i].Comment + ' } ';
+    if Curr.HasValue then
+      Result := Result + ' = '+ Curr.Value;
+
+    if Curr.Comment<>'' then
+      Result :=  Result + ' { '+ Curr.Comment + ' } ';
 
     // add a separator, unless it's the last argument
     if i < Count - 1 then
-        Result := Result + ';';
+    begin
+      Result := Result + ';';
+      if Align then
+        Result := REsult+sLineBreak+'  ';
 
-
+    end;
   end;
 
   Result := Result.Replace(',   ',', ');
@@ -450,10 +527,12 @@ end;
 
 procedure TRoutine.Cleanup;
 begin
-  Code.Cleanup;
+  if Assigned(Code) then
+    Code.Cleanup;
 end;
 
 constructor TRoutine.Create(
+        aOwner:TPascalElement;
         aName:String;
         aClassName:string;
         aRoutineType:TRoutineType;
@@ -465,10 +544,13 @@ constructor TRoutine.Create(
         aOverload:Boolean=false;
         aInline:Boolean=false;
         aStatic:Boolean=false;
+        aVirtual:Boolean=false;
         aComment:string='');
 begin
+  inherited Create(aOwner);
+
   Sourceinfo  := default(TSourceInfo);
-  Name        := aName        ;
+  FName        := aName        ;
   ClassName   := aclassName   ;
   RoutineType := aRoutineType ;
   ReturnType  := aReturnType  ;
@@ -479,12 +561,16 @@ begin
     RoutineType := TRoutineType.&procedure;
 
   Parameters  := aParameters  ;
+  aParameters.SetOwner(self);
   LocalVars   := aLocalVars   ;
+  LocalVars.SetOwner(self);
   Code        := aCode        ;
+  Code.SetOwner(self);
   &Override   := aOverride    ;
   &Overload   := aOverload    ;
   &Inline     := aInline      ;
   &Static     := aStatic      ;
+  &Virtual    := aVirtual     ;
   Comment     := aComment     ;
   Visibility  := TVisibility.DefaultVisibility;
 end;
@@ -493,94 +579,137 @@ function TRoutine.ToDeclarationPascal: String;
 var sl:TStringBuilder; s:string;
 begin
   sl := TStringBuilder.Create;
-  for s in Comment.Split([sLineBreak]) do
-    sl.AppendLine('// '+Comment);
+  try
+    if Comment.Trim<>'' then
+    begin
+      sl.AppendLine('  /// <summary>');
+      for s in Comment.Split([sLineBreak]) do
+        sl.AppendLine('  ///   '+s);
+      sl.AppendLine('  /// </summary>');
+    end;
 
-  sl.Append('  ');
-  if &Static then
-    sl.Append('class ');
-  sl.Append(cRoutineType[RoutineType]);
-  sl.Append(' ');
-  sl.Append(Esc(self.Name));
-  if length(Parameters.Items)>0 then
-    sl.Append( '(' + Parameters.ToPascal(false) + ')' );
+    sl.Append('  ');
+    if &Static then
+      sl.Append('class ');
+    sl.Append(cRoutineType[RoutineType]);
+    sl.Append(' ');
+    sl.Append(Esc(self.FName));
+    if Parameters.Count > 0 then
+      sl.Append( '(' + Parameters.ToPascal(false)+ ')' );
 
-  if Self.RoutineType=TRoutineType.&function then
-    sl.Append(':'+Self.ReturnType);
+    if Self.RoutineType=TRoutineType.&function then
+      sl.Append(':'+Self.ReturnType);
 
-  if sl.ToString.Trim<>';' then
-    sl.Append(';');
+    if sl.ToString.Trim<>';' then
+      sl.Append(';');
 
-  if &Override then sl.Append('override;');
-  if &Overload then sl.Append('overload;');
-  if &Inline   then sl.Append('inline;');
-  if &Static   then sl.Append('static;');
+    if &Override then sl.Append('override;');
+    if &Overload then sl.Append('overload;');
+    if &Inline   then sl.Append('inline;');
+    if &Static   then sl.Append('static;');
+    if &Virtual  then sl.Append('virtual;');
 
-  Result := sl.ToString;
-  sl.Free;
+    Result := sl.ToString;
+  finally
+    sl.Free;
+  end;
 end;
 
 
 function TRoutine.ToImplementationPascal(aClassName: string): String;
-var sl:TStringBuilder;
+var sl:TStringBuilder; s:string;
 // c: string;
 begin
   sl := TStringBuilder.Create;
-  sl.Append(cRoutineType[RoutineType]);
-  sl.Append(' ');
+  try
 
-  if aClassName<>'' then
-  if Esc(aClassName)<>'TGlobal' then
-    sl.Append(Esc(aClassName) + '.');
-  sl.Append(Esc(self.Name));
-  if length(Parameters.Items)>0 then
-    sl.Append( '(' + Parameters.ToPascal(false) + ')' );
+    if Comment.Trim<>'' then
+    begin
+      sl.AppendLine('/// <summary>');
+      for s in Comment.Split([sLineBreak]) do
+        sl.AppendLine('///   '+s);
+      sl.AppendLine('/// </summary>');
+    end;
 
-  if Self.RoutineType=TRoutineType.&function then
-    sl.Append(':'+Self.ReturnType);
+    sl.Append(cRoutineType[RoutineType]);
+    sl.Append(' ');
 
-  sl.AppendLine(';');
-  if self.LocalVars.Count>0 then
-    sl.Append( LocalVars.ToPascal(true) );
+    if aClassName<>'' then
+    if Esc(aClassName)<>'TGlobal' then
+      sl.Append(Esc(aClassName) + '.');
+    sl.Append(Esc(self.FName));
+    if Parameters.Count > 0 then
+      sl.Append( '(' + Parameters.ToPascal(false) + ')' );
 
-  sl.AppendLine( 'begin');
-  Code.Cleanup;
+    if Self.RoutineType=TRoutineType.&function then
+      sl.Append(':'+Self.ReturnType);
 
-  sl.AppendLine(code.ToPascal);
+    sl.AppendLine(';');
+    if self.LocalVars.Count>0 then
+      sl.Append( LocalVars.ToPascal(true) );
 
-  sl.AppendLine( 'end;');
-  Result := sl.ToString;
-  sl.Free;
+    sl.AppendLine( 'begin');
+
+    Code.Cleanup;
+    Code.Align;
+
+    code.Renderinfo.Position := sl.Length+1;
+    sl.AppendLine(code.ToPascal);
+    code.Renderinfo.Length   := sl.Length - code.Renderinfo.Position ;
+
+    sl.AppendLine( 'end;');
+    Result := sl.ToString;
+  finally
+    sl.Free;
+  end;
+end;
+
+function TRoutine.ToString: string;
+begin
+  Result := FName+'( )';
 end;
 
 { TClassDef }
 
-procedure TClassDef.AddRoutine(const m: TRoutine);
-begin
-  SetLength(Methods,length(Methods)+1);
-  Methods[High(Methods)] := m;
-end;
-
-procedure TClassDef.Cleanup;
+function TClassDef.AddRoutine(const m: TRoutine):Boolean;
 var i:integer;
 begin
-  for i := 0 to length(Methods)-1 do
-    Methods[i].Cleanup;
+  Result := True;
+  for I := 0 to high(FMethods) do
+    if (FMethods[I].FName=m.FName) then
+    begin
+      Result := False;
+      Break;
+    end;
+
+  if Result then
+    FMethods := FMethods + [m]
+  else
+    if FMethods[I].Visibility = DefaultVisibility then
+      FMethods[I].Visibility := m.Visibility;
 end;
 
-constructor TClassDef.Create;
-begin
-  self.Kind := TClassKind.&class;
-  self.IsPacked := false;
-  self.Vars := TVariableList.CreateEmpty;
-end;
 
-constructor TClassDef.Create(aTypename: string; aVars: TVariableList);
+constructor TClassDef.Create(aOwner:TPascalElement; aTypename: string; aMembers: TVariableList;aKind:TClassKind);
 begin
-  self.Name := aTypename;
-  self.Vars := aVars;
-  self.Kind := TClassKind.&class;
-  self.IsPacked := false;
+  inherited Create(aOwner);
+
+  FKind := aKind;
+  FIsPacked := false;
+
+  FConsts := TVariableList.Create(self);
+  FConsts.Name := 'Consts';
+
+  if aMembers=nil then
+    FMembers := TVariableList.Create(self)
+  else
+    FMembers := aMembers;
+
+  FMembers.Name := 'Members';
+  FMembers.FOwner := self;
+
+  FName := aTypename;
+  FIsPacked := false;
 
 end;
 
@@ -589,8 +718,8 @@ var
   r: TRoutine;
 begin
   Result := nil;
-  for r in self.Methods do
-    if SameText(r.Name,n) then
+  for r in self.FMethods do
+    if SameText(r.FName,n) then
       Exit(r);
 end;
 
@@ -599,126 +728,150 @@ var sl:TStringList;
   m: TRoutine;
 begin
   sl := TStringList.Create;
+  try
 
-  if Kind <> TClassKind.&unit then
-    sl.Add('type');
+    if FKind <> TClassKind.&unit then
+      sl.Add('type');
 
-  case Kind of
-    &class  :
-      if ParentType='' then
-        sl.Add(Esc(Name) + ' = class')
-      else
-        sl.Add(Esc(Name) + ' = class('+ParentType+')');
-    &record :
-      begin
-        if IsPacked then
-          sl.Add(Esc(Name) + ' = packed record')
+    case FKind of
+      &class  :
+        if FParentType='' then
+          sl.Add(Esc(FName) + ' = class')
         else
-          sl.Add(Esc(Name) + ' = record');
-      end;
-    &object : sl.Add(Esc(Name) + ' = object('+ParentType+')');
-    &unit   : ;
-  end;
-
-
-  if consts.Count>0 then
-  begin
-    sl.Add('const');
-    sl.Add( consts.ToPascal(true)  );
-  end;
-
-  if vars.Count>0 then
-  begin
-    if consts.Count>0 then
-    begin
-      sl.Add('');
-      sl.Add('var');
+          sl.Add(Esc(FName) + ' = class('+FParentType.Trim +')');
+      &record :
+        begin
+          if FIsPacked then
+            sl.Add(Esc(FName) + ' = packed record')
+          else
+            sl.Add(Esc(FName) + ' = record');
+        end;
+      &object : sl.Add(Esc(FName) + ' = object('+FParentType.Trim+')');
+      &unit   : ;
     end;
-    sl.Add( vars.ToPascal(true).TrimRight  );
+
+
+    if FConsts.Count>0 then
+    begin
+      sl.Add('const');
+      sl.Add( FConsts.ToPascal(true)  );
+    end;
+
+    if FMembers.Count>0 then
+    begin
+      if FConsts.Count>0 then
+      begin
+        sl.Add('');
+        sl.Add('var');
+      end;
+      sl.Add( FMembers.ToPascal(true).TrimRight  );
+    end;
+
+    for m in FMethods  do
+      sl.Add(m.ToDeclarationPascal);
+
+
+    if self.FKind <> &unit then
+      sl.Add( 'end;');
+
+    result := sl.Text;
+  finally
+    sl.Free;
   end;
-
-  for m in Methods  do
-    sl.Add(m.ToDeclarationPascal);
-
-
-  if self.Kind <> &unit then
-    sl.Add( 'end;');
-
-  result := sl.Text;
-  sl.Free;
 end;
 
 function TClassDef.ToPascalImplementation: string;
 var m:TRoutine; sl:TStringList;
 begin
   sl := TStringList.Create;
-  if length(Methods)=0 then
-    Exit('');
+  try
+    if length(FMethods)=0 then
+      Exit('');
 
-  if self.Kind<>&unit then
-  begin
-    sl.Add( format('{ %s }',[self.Name]) );
-    sl.Add('' );
+    if self.FKind<>&unit then
+    begin
+      sl.Add( format('{ %s }',[self.FName]) );
+      sl.Add('' );
+    end;
+
+    for m in FMethods  do
+    begin
+      m.Renderinfo.Position := sl.Text.Length+1;
+      sl.Add(m.ToImplementationPascal( FName ));
+      m.Code.Renderinfo.Position := m.Code.Renderinfo.Position + m.Renderinfo.Position;
+      m.Renderinfo.Length   := sl.Text.Length - m.Renderinfo.Position-1;
+      sl.Add('');
+    end;
+
+    Result := sl.Text;
+  finally
+    sl.free;
   end;
-
-  for m in Methods  do
-  begin
-    m.Renderinfo.Position := sl.Text.Length+1;
-    sl.Add(m.ToImplementationPascal( name ));
-    m.Renderinfo.Length   := sl.Text.Length - m.Renderinfo.Position ;
-    sl.Add('');
-  end;
-
-  Result := sl.Text;
-  sl.free;
 
 end;
 
 
 
+
+function TClassDef.ToString: string;
+begin
+  if Self.FKind=&unit then
+    Result := 'Global'
+  else
+    Result := cClassKind[ self.FKind ] + ' ' + FName;
+end;
 
 { TCode }
 
 
 procedure TCode.Add(const s: String);
 begin
-  SetLength(Lines,length(Lines)+1);
-  Lines[High(Lines)] := s;
+  Lines.Add(s);
 end;
 
 procedure TCode.Align;
-var I,J,f,p,mp:integer;
-
-begin
-  I := 0;
-  mp := 0;
-  while I<length(Lines) do
+var s,oldLine,Line:string; i,First,Last:integer;
+  p,maxPos:integer;
+  procedure DoAlign;
+  var J,t: Integer;
   begin
-    p := lines[I].IndexOf(':=');
-    if p>0 then
+    if MaxPos>0 then
     begin
-      f := I;
-      while p>0 do
+      for J := First to Last do
       begin
-        if Lines[I].Trim.StartsWith('for') then
-          p := 0;
-        mp := max(p,mp);
-        p := lines[I].IndexOf(':=');
-        inc(I);
+        oldLine := Lines[J];
+        t := Pos(':=',OldLine);
+        s := StringOfChar(' ', MaxPos-t);
+        if P>3 then
+          Insert(s,OldLine,t);
+        Lines[J] := OldLine;
       end;
-
-      if mp>5 then
-      for J := f to I do
-      begin
-        lines[J] :=
-
-          copy(copy(lines[J],1,lines[J].IndexOf(':='))+ StringOfChar(' ', 255) ,1,mp) +
-          copy(lines[J],lines[J].IndexOf(':='),255);
-      end;
-      mp := 0;
     end;
-    inc(i);
   end;
+begin
+  First := -1;
+  MaxPos := -1;
+  for I := 0 to Lines.Count-1 do
+  begin
+    Line := Lines[I];
+    P := Pos(':=',Line);
+    if (P>0) and (not Line.Contains('for')) then
+    begin
+      if maxPos<0 then
+        First := i;
+      MaxPos := Max(maxPos,P);
+      Last := i;
+    end
+    else
+    begin
+      DoAlign;
+      P := -1;
+      First := -1;
+      MaxPos := -1;
+    end;
+  end;
+  if MaxPos>0 then
+    DoAlign;
 end;
 
 procedure TCode.Cleanup;
@@ -727,7 +880,7 @@ var i,j:integer;
 begin
   // clean code
   j := 0;
-  for I := 0 to high(Lines) do
+  for I := 0 to Lines.Count-1 do
   begin
     line := Lines[I];
     if line='' then
@@ -736,13 +889,13 @@ begin
     line := line.Replace(#9,'  ');
     if line.Trim<>'' then
     begin
-      if length(lines)>1 then
+      if lines.Count>1 then
       begin
         if I=0 then
           if line.Trim='begin' then
             Continue;
 
-        if I=high(lines) then
+        if I=lines.Count-1 then
           if line.StartsWith('end') then
             Continue;
       end;
@@ -751,30 +904,66 @@ begin
       inc(J);
     end;
   end;
-  Setlength(lines,J);
+  for I := Lines.Count-1 downto J do
+    Lines.Delete(I);
 end;
 
-constructor TCode.Create(c: TArray<string>);
+procedure TPascalElement.SetDefaultVisible;
+  procedure SetVisible(const el:TPascalElement);
+  var i:integer;
+  begin
+    if el = nil then
+      Exit;
+
+    OutputDebugString(pchar(el.ToString));
+
+    if el is TVariableList then
+      if el.Count=0 then
+        el.Visible := False;
+
+    if el is TCode then
+      if el.Count=0 then
+        el.Visible := False;
+
+    if el is TUsesList then
+      if el.Count=0 then
+        el.Visible := False;
+
+    if el.Owner<>nil then
+      if not el.Owner.Visible then
+        el.Visible := False;
+
+    for I := 0 to el.Count-1 do
+      SetVisible(el.FChildren[i]);
+  end;
+
+begin
+  SetVisible(self);
+end;
+
+constructor TCode.Create(aOwner:TPascalElement;c: TArray<string>);
 var i:integer;
 begin
-  setlength(lines,length(c));
-  for I := 0 to length(c)-1 do
-    lines[I] := c[i];
+  inherited Create(aOwner);
+
+  Lines := TList<string>.Create;
+  Lines.InsertRange(0,c);
 end;
 
-class function TCode.CreateEmpty: TCode;
+destructor TCode.Destroy;
 begin
-  //
+  Lines.Free;
+  inherited;
 end;
 
-function TCode.GetCount: integer;
+function TCode.GetLineCount: integer;
 begin
-  Result := Length(Lines)
+  Result := Lines.Count
 end;
 
 function TCode.ToPascal: String;
 begin
-  Result := ''.join(sLineBreak,self.Lines);
+  Result := string.join(sLineBreak, Lines.ToArray );
 end;
 
 
@@ -783,32 +972,54 @@ end;
 
 function TPascalUnit.AddClass(c: TClassDef):TClassDef;
 begin
-  SetLength(Self.Classes,length(self.Classes)+1);
-  Classes[High(Classes)] := c;
+  Classes := Classes + [c];
   Result := c;
 end;
 
-procedure TPascalUnit.Cleanup;
-var c:TClassDef;
+constructor TPascalUnit.Create(aOwner:TPascalElement);
 begin
-  &Initialization.Cleanup;
-  &Finalization.Cleanup;
-  for c in Classes do
-    c.Cleanup;
+  inherited Create(aOwner);
+
+  Defines := TStringList.Create;
+
+  usesListIntf := TUsesList.Create(self);
+  usesListImpl := TUsesList.Create(self);
+
+  &Initialization := TCode.Create(self,[]);
+  &Initialization.FName := 'Initialization';
+  &Finalization   := TCode.Create(self,[]);
+  &Finalization.FName := 'Finalization';
+
+  GlobalVars := TVariableList.Create(self);
+  GlobalVars.FName := 'Global vars';
+  ImplementationVars := TVariableList.Create(self);
+  ImplementationVars.FName := 'Impl vars';
 end;
 
-constructor TPascalUnit.Create;
+
+
+destructor TPascalUnit.Destroy;
 begin
+  Defines.Free;
+  inherited;
 end;
 
 function TPascalUnit.getClassByName(s: string): TClassDef;
 var I:Integer;
 begin
   for I := 0 to high(self.Classes) do
-    if SameText( Classes[i].Name, s) then
+    if SameText( Classes[i].FName, s) then
       Exit( classes[I] );
 
-  Result := nil;
+  if SameText(s,'TGlobal') then
+    Result := TClassDef.Create(Self,s,nil,TClassKind.&unit)
+  else
+    if s.ToLower.EndsWith('rec') then
+      Result := TClassDef.Create(Self,s,nil,TClassKind.&record)
+    else
+      Result := TClassDef.Create(Self,s,nil,TClassKind.&class);
+
+  Self.AddClass(Result);
 end;
 
 function TPascalUnit.toPascal: string;
@@ -823,7 +1034,6 @@ var
   o:Integer;
   m:TRoutine;
 begin
-  Cleanup;
   sl := TStringList.Create;
 
   g := Self.getClassByName('TGlobal');
@@ -833,23 +1043,23 @@ begin
   isProgram := (g <> nil) and (g.getMethodByName('main') <> nil);
 
   // if no name is set, try to base it on a class name in the unit.
-  if Name='' then
+  if FName='' then
   begin
-    Name := 'tmp';
+    FName := 'tmp';
     for c in classes do
-      if c.Name<>'TGlobal' then
+      if c.FName<>'TGlobal' then
       begin
-        name := c.Name;
-        if name.StartsWith('T') then
-          name:= name.TrimLeft(['T']);
+        FName := c.FName;
+        if string(FName).StartsWith('T') then
+          FName:= string(FName).TrimLeft(['T']);
         break;
       end;
   end;
 
   if isProgram then
-    sl.Add('program '+Name+';')
+    sl.Add('program '+MakePascalCase(FName)+';')
   else
-    sl.Add('unit '+Name+';');
+    sl.Add('unit '+MakePascalCase(FName)+';');
 
   sl.Add('');
 
@@ -865,11 +1075,11 @@ begin
     sl.Add( e.ToPascal );
 
   for c in classes do
-    if ((not isProgram) or (g.Kind<>&unit)) or (c.Kind=TClassKind.&record) then
+    if ((not isProgram) or (g.FKind<>&unit)) or (c.FKind=TClassKind.&record) then
     begin
       c.Renderinfo.Position := length(sl.Text)+1;
       sl.Add(c.ToPascalDeclaration);
-      c.Renderinfo.Position := length(sl.Text)-c.Renderinfo.Position;
+      c.Renderinfo.Length   := length(sl.Text)-c.Renderinfo.Position;
     end;
 
 
@@ -879,7 +1089,7 @@ begin
 
   if length(self.GlobalArrays1D)>0 then
   begin
-    sl.Add('const // 1d arrays');
+    sl.Add('const');
     for ar in self.GlobalArrays1D do
     begin
       ar.Renderinfo.Position := sl.Text.Length+1;
@@ -890,7 +1100,7 @@ begin
 
   if length(self.GlobalArrays2D)>0 then
   begin
-    sl.Add('const // 2d arrays');
+    sl.Add('const');
     for ar2 in self.GlobalArrays2D do
     begin
       ar2.Renderinfo.Position := sl.Text.Length+1;
@@ -911,7 +1121,7 @@ begin
   begin
     o := sl.Text.Length;
     sl.Add(c.ToPascalImplementation);
-    for m in c.Methods do
+    for m in c.FMethods do
       m.Renderinfo.Position := m.Renderinfo.Position + o;
   end;
   sl.Add('');
@@ -947,6 +1157,14 @@ end;
 
 
 
+function TPascalUnit.ToString: string;
+begin
+  if FName='TGlobal' then
+    Exit('{global}');
+
+  Result := 'Unit '+ FName
+end;
+
 { TArrayDef }
 
 function TArrayDef1D.ToPascal: string;
@@ -970,7 +1188,7 @@ begin
 
   Result :=
     format( '  %s : array[0..%d] of %s = ('+sLineBreak+'    %s );'+sLineBreak,[
-      name,
+      FName,
       length(Items)-1,
       itemType,
       elms
@@ -982,25 +1200,31 @@ end;
 
 function TLoop.toPascal: string;
 var v:string;t:integer;
+const cLoopDir:array[TLoop.TDir] of string=('to','downto');
 begin
   case Op of
     LT    : if TryStrToInt(EndVal, t) then
               v := IntToStr(t - 1)
             else
               v := EndVal + '-1';
+
     LT_EQ :   v := EndVal;
+
     GT    : if TryStrToInt(EndVal, t) then
               v := IntToStr(t + 1)
             else
               v := EndVal + '+1';
+
     GT_EQ :  v := EndVal;
+
     EQ    :  v := EndVal;
   end;
 
-  Result := Format('for %s := %s to %s do', [
-              IndexerVar.Name, // for XX
-              StartVal,        // :=  XX
-              v                // to  XX
+  Result := Format('for %s := %s %s %s do', [
+              IndexerVar.FName,    // for XX
+              StartVal,           // :=  XX
+              cloopDir[self.Dir], // to/downto
+              v                   //  XX
               ]);
 
 end;
@@ -1008,33 +1232,35 @@ end;
 
 { TUsesList }
 
-constructor TUsesList.Create(aUnit: TPascalUnit);
+constructor TUsesList.Create(aOwner:TPascalElement);
 begin
-  self.&Unit := aUnit;
+  inherited Create(aOwner);
+  self.&Unit := aOwner as TPascalUnit;
 end;
 
-procedure TUsesList.AddUnit(s: string);
-var t:string;
+procedure TUsesList.AddUnit(const s: string);
+var t:string; el:TPascalElement;
 begin
   if &unit<>nil then
-    if SameText(s,&Unit.Name) then
+    if SameText(s,&Unit.FName) then
       exit;
 
-  for t in self.Units do
-    if SameText(s,t) then
+  for el in FChildren do
+    if SameText(s,el.Name) then
       Exit;
 
-  self.Units := self.Units + [s];
-end;
-
-function TUsesList.getCount: integer;
-begin
-  Result := length(Self.Units)
+  el := TUsesListItem.Create(self);
+  el.Name := s;
 end;
 
 function TUsesList.ToPascal: string;
+var units:TArray<string>; el:TPascalElement;
 begin
   Result := '';
+  Units := [];
+  for el in FChildren do
+    Units := Units + [el.Name];
+
   if Count>0 then
   begin
     Result := 'uses '+string.join(', ', Units)+';';
@@ -1080,7 +1306,7 @@ begin
 
   // we could get an anonymous enum type
   // we'll convert it to a list of consts
-  if name='' then
+  if FName='' then
   begin
     setlength(a,length(Items));
     for I := 0 to high(Items) do
@@ -1094,7 +1320,7 @@ begin
   for I := 0 to high(Items) do
     a[I] := Items[I];
 
-  Result := '  '+ Esc(name) +' = (' + sLineBreak +
+  Result := '  '+ Esc(FName) +' = (' + sLineBreak +
             '    '+ ''.Join(','+sLineBreak+'    ',a ) +
             ');'+sLineBreak;
 end;
@@ -1138,9 +1364,10 @@ begin
     b := b + ['('+elms+')'];
   end;
 
+  if length(items)>0 then
   Result :=
     format( '  %s : array[0..%d,0..%d] of %s = ('+sLineBreak+'    ',[
-      name,
+      FName,
       length(Items)-1,
       length(Items[0])-1,
       itemType
@@ -1149,6 +1376,214 @@ begin
   Result := Result + ''.join(','+sLineBreak+'    ',b);
 
   Result := Result + ');'+sLineBreak;
+end;
+
+procedure TCase.SetCode(const Value: TCode);
+begin
+  FCode := Value;
+  FCode.SetOwner(self);
+end;
+
+function TCase.ToPascal(aIndent:integer=6; aAlign:integer=0):string;
+var codelines:TArray<string>;
+  I: Integer;
+  indent:string;
+const
+  MaxAlign=15;
+begin
+  Indent := StringOfChar(' ',aindent);
+  // remove break if it's the last statement:
+  codeLines := code.Lines.ToArray;
+  // remove break.. not needed in pascal
+  if length(codelines)>0 then
+    if codelines[high(codelines)].startswith('break') then
+      setlength(codelines,length(codelines)-1);
+
+  codeLines := string.Join(';',codelines).Trim.Split([sLineBreak]);
+
+
+  aAlign := min(MaxAlign, aAlign);
+  if Id.Length>MaxAlign then
+    Result := Indent + '  '+self.Id
+  else
+    Result := Indent + '  '+copy(Id+ StringOfChar(' ',50) ,1, aAlign);
+
+  if not SameText(id,'else') then
+    Result := Result  + ':';
+
+  Result := Result  + ' ';
+
+  case Length(codelines) of
+    0: Result := Result + ';' + sLineBreak;
+    1: Result := Result + codelines[0] + ';' + sLineBreak;
+  else
+    begin
+      Result := Result + sLineBreak +
+                Indent+'    begin' + sLineBreak;
+
+      for I := 0 to high(codelines) do
+        Result := Result + Indent + '      '+codelines[I].Trim+ sLineBreak;
+
+      Result := Result + Indent+'    end;' + sLineBreak;
+    end;
+  end;
+end;
+
+function TSwitch.ToPascal;
+var
+  i:integer;
+  indentStr:string;
+  align:integer;
+begin
+  align := 0;
+  for I := 0 to high(Cases) do
+    if cases[I].Id.Length > align then
+      align := cases[I].Id.Length;
+
+  indentStr:=StringOfChar(' ',indent);
+  Result := indentStr+'case '+ Switch.Trim + ' of' + sLineBreak;
+  for I := 0 to high(Cases) do
+    Result := Result + cases[I].ToPascal(Indent, Align);
+  Result := Result + sLineBreak + indentStr+ 'end; // case' + sLineBreak;
+
+end;
+
+
+
+function TArrayDef2D.ToString: string;
+begin
+  if Length(Items)<1 then
+    Result :=
+      format( '%s : array[0..%d] of %s',[
+        FName,
+        length(Items)-1,
+        itemType
+      ])
+  else
+    Result :=
+      format( '%s : array[0..%d,0..%d] of %s',[
+        FName,
+        length(Items)-1,
+        length(Items[0])-1,
+        itemType
+      ]);
+end;
+
+{ TPascalElement }
+
+procedure TPascalElement.AddChild(const el: TPascalElement);
+begin
+  if not Assigned(el) then
+    Exit;
+
+  if not (el is TPascalElement) then
+    Exit;
+
+  TPascalElement(el).FOwner := self;
+  FChildren.Add(el);
+end;
+
+
+function TPascalElement.ChildIndexByName(const Name: string): integer;
+var I:Integer;
+begin
+  Result := -1;
+  for I := 0 to Count-1 do
+    if SameText(FChildren[I].FName,Name) then
+      Exit(I);
+end;
+
+function TPascalElement.Count: integer;
+begin
+  Result := FChildren.Count;
+end;
+
+constructor TPascalElement.Create(aOwner: TPascalElement);
+begin
+  FVisible  := True;
+  FChildren := TObjectList<TPascalElement>.Create;
+
+  self.Sourceinfo := default(TSourceInfo);
+  self.Renderinfo := default(TSourceInfo);
+
+  SetOwner(aOwner);
+end;
+
+
+destructor TPascalElement.Destroy;
+begin
+  FreeAndNil(FChildren);
+  inherited;
+end;
+
+
+function TPascalElement.GetChildren(Index: integer): TPascalElement;
+begin
+  Result := FChildren[Index]
+end;
+
+function TPascalElement.GetName: string;
+begin
+  Result := FName;
+end;
+
+procedure TPascalElement.SetOwner(aOwner: TPascalElement);
+var I:integer;
+begin
+  if FOwner <> nil then
+    if FOwner<>aOwner as TPascalElement then
+      raise Exception.CreateFmt('Cannot reassign owner (%s) for %s. Owner already set to %s ',[ AOwner.ToString, Self.ToString, FOwner.ToString ] );
+
+//  if AOwner = nil then raise Exception.Create('Owner cannot be set to nil');
+
+  if aOwner = nil then
+    Exit;
+
+  for I := 0 to AOwner.Count-1 do
+    if AOwner.FChildren[I] as TPascalElement = self then
+      exit;
+//      raise Exception.Create('Cannot add same element twice'+sLineBreak+aOwner.ToString);
+
+  FOwner := aOwner as TPascalElement;
+  FOwner.AddChild(self);
+end;
+
+function TPascalElement.ToString: string;
+begin
+  Result := ClassName.Substring(1) + ': ' + FName
+end;
+
+
+constructor TIfStatement.Create(aOwner:TPascalElement; aCondition, aIfTrue, aIfFalse: TCode);
+begin
+  inherited Create(aOwner);
+
+  Condition := aCondition;
+  aIfTrue := aIfTrue;
+  aIfFalse := aIfFalse;
+
+  Condition.SetOwner(self);
+  aIfTrue.SetOwner(self);
+  aIfFalse.SetOwner(self);
+end;
+
+function TIfStatement.ToPascal: string;
+begin
+  Result := '  if '+ Condition.ToPascal + ' then'+sLineBreak+ IfTrue.ToPascal;
+
+  if IfFalse.Count>0 then
+    Result := Result + ' else '+sLineBreak +  ifFalse.ToPascal;
+end;
+
+function TArrayDef1D.ToString: string;
+begin
+  Result :=
+    format( '%s : array[0..%d] of %s',[
+      FName,
+      length(Items)-1,
+      itemType
+    ]);
+
 end;
 
 end.
