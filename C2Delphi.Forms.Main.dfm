@@ -259,7 +259,6 @@ object frmMain: TfrmMain
         'syndt1')
       Options = [eoAltSetsColumnMode, eoAutoIndent, eoDragDropEditing, eoEnhanceEndKey, eoGroupUndo, eoScrollPastEol, eoShowScrollHint, eoSmartTabDelete, eoSmartTabs, eoTabsToSpaces]
       RightEdge = 0
-      OnProcessCommand = edPascalCodeProcessCommand
       OnSpecialLineColors = edPascalCodeSpecialLineColors
       FontSmoothing = fsmNone
     end

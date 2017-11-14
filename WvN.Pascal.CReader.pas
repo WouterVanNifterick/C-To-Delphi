@@ -17,7 +17,6 @@ implementation
 
 uses
   IoUTils,
-//  WvN.Log,
   SysUtils,
   System.RegularExpressions,
   Classes;
@@ -33,28 +32,15 @@ const
   rxID     = '[a-zA-Z_\$][\w_]*(\s*\*)?';
   rxT = '(\*\s*)?(static\s+)?(unsigned\s+|signed\s+)?(long\s+)?[a-zA-Z_\$][\w_\<\>]*\s*(\*\s*)?';
   rxType   = rxT;
-
-//rxMultiLinecomment = '(?<comment>\/\*(\*(?!\/)|[^*])*\*\/)?'; // preserve comments
-//rxMultiLinecomment = '(?<comment>\/\*[^*]*\*\/)?'; // preserve multiline comments
-//rxMultiLinecomment = '(?<comment>\/\*([^*]|(\*+[^*\/]))*\*\/)?'; // preserve multiline comments.. works, but causes overflow sometimes
-//rxMultiLinecomment = '(?<comment>\/\*[^*]+?\*\/)?'; // preserve multiline comments..
-//rxMultiLinecomment = '(?<comment>\/\*(.|\r|\n)+?\*\/)?'; // preserve multiline comments..
-//  rxMultiLinecomment = '(?<comment>\/\*([^\*]|[\r\n]|(\*+([^\/\*]|[\n\r])))*\*+\/)';
-//  rxMultiLinecomment = '(?<comment>\/\*[^\*]*\*/)?';
   rxMultiLinecomment = '(?<comment>\s*)?';
   rxStringLiteral = '[a-zA-Z_]?\"(\\.|[^\\"\n])*\"';
 
   rxHexadecimal = '0[xX]([a-fA-F0-9]+)((u|U)|((u|U)?(l|L|ll|LL))|((l|L|ll|LL)(u|U)))?';
-//  rxNum    = '\d*';
-//  rxNum    = '(?:[^a-zA-Z])[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?';
   rxNum    = '(?:[^a-zA-Z])[\+\-]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?';
-
-  // rxString = r'"([^\n]|(\(.|\n)))*?"';
   rxChar = 'L?\''([^\\n]|(\(.|\n)))*?\''';
 
   rxMethodDef=
              '^'+ // only do this trick from the start.. otherwise we might accidently match somewhere else
-//             '\s*'+
              rxMultiLineComment+ // preserve multiline comments..
              '(?<comment3>(\/\/([^\n]*)\n)*)?'+ // preserve single line comments
              '(?:\s*)'                 + // to preseve indents of original code
@@ -70,7 +56,6 @@ const
              // some special modifiers.. not sure how to convert this to Delphi though, so let's leave those for now
              '((?<pascal>__pascal)\s+)?'+
              '((?<fastcall>__fastcall)\s+)?'+
-             // '((?<far>far)\s+)?'+
              '((?<classname>'+rxID+')\:\:)?'+ // support classname::method() kind of signature
              '(?<destructor>\~)?'+ // constructor looks like MyClass::~MyClass()
              '(?<funcname>'+rxID+')\s*'+      // the function name itself
@@ -689,10 +674,6 @@ begin
   Result := ReplaceOutsideCommentsAndStrings(aCCode,aMacro.Identifier, aMacro.Replacements[0]);
   Exit;
 
-
-// #define <identifier> <replacement token list>                    // object-like macro
-// #define <identifier>(<parameter list>) <replacement token list>  // function-like macro, note parameters
-
   Loc := None;
 
   I := 0;
@@ -753,7 +734,7 @@ begin
       if J>=aMacro.Identifier.Length then
       begin
         // found identifier!
-      //  ReplaceOutsideCommentsAndStrings()
+        //  ReplaceOutsideCommentsAndStrings()
       end;
     end
     else
@@ -903,20 +884,6 @@ begin
     setV(pas,m,'expr');
     Exit(true);
   end;
-
-
-
-  // int test = 5*5+xxx
-//  if TRegEx.Match(c, '^\s*(struct\s+)?(?<vartype>' + rxType + ')\s+(?<varname>' + rxID + ')\s*=\s*(?<expression>.*)\s*$').Success then pas := ''; Exit(True);
-  // const int base = 508887777
-//  if TRegEx.Match(c, '^\s*(?<const>const)\s+(struct\s+)?(?<vartype>' + rxType + ')\s+(?<varname>' + rxID + ')\s*=\s*(?<expression>.*)\s*;\s*(?<comment>.*)\s*$').Success then pas := ''; Exit(True);
-  // int test;  // int *test;  // int **test
-//  if TRegEx.Match(c, '^(?<indent>\s*)(struct\s+)?(?<vartype>' + rxType + ')\s+(?<pointer>[\*]{0,2})?(?<varname>' + rxID + ')\s*;').Success then pas := ''; Exit(True);
-//  if TRegEx.Match(c, '^\s*(?<vartype>' + rxType + ')\s+(?<varname>' + rxID + ')\s*\[\s*(?<arraysize>.*)\s*\]\s*=\s*()').Success then pas := ''; Exit(True);
-//  if TRegEx.Match(c,'^\s*(?<vartype>'+rxType+')\s+(?<vars>(('+rxID+')\s*\,?)+)\s*;',[roSingleLine]).Success then pas := ''; Exit(True);
-  // static const int lg_n = 6;
-//  if TRegEx.Match(c, '^\s*(?<static>static)\s+(?<const>const)\s+(?<vartype>' + rxType + ')\s+(?<varname>' + rxID + ')\s*\=\s*(?<value>.*)\;$').Success then pas := ''; Exit(True);
-
 end;
 
 procedure DeleteArrayIndex(var X: TArray<string>; Index: Integer);
@@ -969,27 +936,6 @@ begin
   Result := TRegEx.Replace(Result, '^(\s*)default\s*\:', '\1else', [roMultiLine]);
 end;
 
-(*
-void ObxdAudioProcessor::setParameter (int index, float newValue)
-{
-	switch(index)
-	{
-	case SELF_OSC_PUSH:
-		synth.processSelfOscPush(newValue);
-		break;
-	case PW_ENV_BOTH:
-		synth.processPwEnvBoth(newValue);
-		break;
-	case PW_OSC2_OFS:
-		synth.processPwOfs(newValue);
-		break;
-	case ENV_PITCH_BOTH:
-		synth.processPitchModBoth(newValue);
-		break;
-	}
-}
-
-*)
 procedure FixCaseStatementsFull(const c:TCode; var aAllCCode: string);
 var
   matchSwitch,
@@ -1020,31 +966,7 @@ begin
     cs.Sourceinfo.Position := matchSwitch.Index;
     cs.Sourceinfo.Length   := SwitchStatementStr.Length;
 
-(*
-int x(){
-switch(z){
-   case 0:break;
-   case 1:yyy; break;
-   case 2:zz
-	 ;
-	 break;
-   case 3:y;
-	 break;
-   case 4:vdrert; test; ee;
-	    line();
-			text();
-   case 5:vdt; break;
-   case 6:vd4rt; break;
-	 default: iwueriuwer;
-}
 
-switch(m){
-  case XXX:dostuff();
-  case YYY:meh; break;
-}
-
-}
-*)
 
     for matchCase in TRegEx.Matches(SwitchStatementStr, '(case\s+(?<case>[_\w\'']+))?(default)?\s*:\s*(?<code>.+?)(?=break|case|default)', [roSingleLine]) do
     begin
@@ -1358,14 +1280,14 @@ begin
   //      to while XXX do
   Result := TRegEx.Replace(Result,'^(?<indent>\s*)while\s*\(\s*(?<expr>.*)\s*\)(?<trail>\s*)','\1while \2 do \3',[ roMultiLine ]);
 
-//  int main(){
-//do {
-//x = 2 * x;
-//y--;
-//}
-//while (x < y);
-//
-//}
+  //  int main(){
+  //do {
+  //x = 2 * x;
+  //y--;
+  //}
+  //while (x < y);
+  //
+  //}
   Result := TRegEx.Replace(Result,'^(?<indent>\s*)do\s*\{(?<body>[^\}]*)\}\s*(while)\s*\((?<expr>[^)]*)\s*\)\s*;','\1repeat \2 until not(\4);',[ roMultiLine ]);
 
 
@@ -1379,20 +1301,15 @@ begin
   // well.. we've exchausted all the tricks we've got on our sleeve
   // let's just do some simplistic substitutions to convert whatever's left
   // not very accurate, but it works in the majority of the situations
-//Result := Result.Replace(' = ', ' := '    , [rfReplaceAll]);
+  //Result := Result.Replace(' = ', ' := '    , [rfReplaceAll]);
 
   Result := Result.Replace('==' , '='    , [rfReplaceAll]);
   Result := Result.Replace('!=' , '<>'   , [rfReplaceAll]);
 
   // replace ! that's not in a string. Else "Hello, World!" becomes "Hello, World not "
-//  Result := TRegEx.Replace(Result,'(\!)(?=(?:[^"'']|"[^"'']*")*$)',' not ',[roSingleLine]);
-//  Result := Result.Replace('!' , ' not ', [rfReplaceAll]);
-
   Result := ReplaceOutsideCommentsAndStrings(Result,'!',' not ');
   Result := Result.Replace('&&' , ' and ', [rfReplaceAll]);
-//  Result := Result.Replace(' & ', ' and ', [rfReplaceAll]);
   Result := Result.Replace('||' , ' or ' , [rfReplaceAll]);
-//Result := Result.Replace(' | ', ' or ' , [rfReplaceAll]);
   Result := ReplaceOutsideCommentsAndStrings(Result,'^',' xor ');
   Result := Result.Replace('>>' , ' shr ', [rfReplaceAll]);
   Result := Result.Replace('<<' , ' shl ', [rfReplaceAll]);
@@ -1409,8 +1326,6 @@ begin
   Result := TRegEx.Replace(Result,'\s\&\s',' and ',[ roMultiLine ]);
 
   Result := TRegex.Replace(Result,'atan\s*\(' , 'arctan(',[roMultiLine ]);
-//Result := Result.Replace('log'  , 'ln' + sLineBreak);
-
 
   // convert conditional defines #ifdef XXX to {$ifdef XXX}
   Result := TRegEx.Replace(Result,'^(\s*)\#ifdef\s+(.*)$','\1{$IFDEF \2}',[  roMultiLine ]);
@@ -1418,7 +1333,6 @@ begin
   Result := TRegEx.Replace(Result,'^(\s*)\#if\s+(.*)$'   ,'\1{$IF \2}',[ roMultiLine ]);
   Result := TRegEx.Replace(Result,'^(\s*)\#else\s*$' ,'\1{$ELSE}',[ roMultiLine ]);
   Result := TRegEx.Replace(Result,'^(\s*)\#endif\s*$' ,'\1{$ENDIF}',[ roMultiLine ]);
-//  Result := TRegEx.Replace(Result,'^(\s*)\#define\s+([\w\d_]+)$' ,'\1{$DEFINE \2}',[ roMultiLine ]);
   Result := TRegEx.Replace(Result,'^(\s*)\#define\s+('+rxID+')\s*$' ,'\1{$DEFINE \2}',[ roMultiLine ]);
 
   // fprintf with newline and parameters
@@ -1446,10 +1360,7 @@ begin
   // convert (*xxx) to @xxx
   Result := TRegEx.Replace(Result,'\(\*(\s*'+rxID+')\)' ,'@\1',[ roMultiLine ]);
 
-  // convert &variable to @variable
-//  Result := TRegEx.Replace(Result,'&('+rxID+')','\1\^',[ roMultiLine ]);
-
-  // convert XXX[534] = 34gfdjeklrtj354;
+    // convert XXX[534] = 34gfdjeklrtj354;
   //      to XXX[534] := 34gfdjeklrtj354;
   // convert XXX[534].xxx = 34gfdjeklrtj354;
   //      to XXX[534].xxx := 34gfdjeklrtj354;
@@ -1552,15 +1463,6 @@ begin
     exit(true);
   end;
 
-
-//  // catch loop variable (for int i=0;i<10;++i)
-//  m := TRegEx.Match(Line, '^(?<indent>\s*)for\s*\(\s*(?<vartype>int(?:\s+))?(?<varname>\w+)\s*\=\s*(?<min>' + rxID + ')\s*;\s*(?<varname2>' + rxID + ')\s*(?<op><[\=]{0,1})\s*(?<max>.*)\s*\;\s*\+\+(?<varname3>\w+)\s*\)\s*(.*)', [roSingleLine]);
-//  if m.Success then
-//  begin
-//    v := TVariable.Create(m.Groups['varname'].Value, convertType(m.Groups['vartype'].Value));
-//    exit(true);
-//  end;
-
   // int xxx[17][18]
   m := TRegEx.Match(Line, '^\s*(?<vartype>' + rxType + ')\s+(?<varname>' + rxID + ')\s*\[\s*(?<arraysize1>.*)\s*\]\s*\[\s*(?<arraysize2>.*)\s*\]');
   if m.Success then
@@ -1595,9 +1497,6 @@ begin
   if line.Contains('void') then
     Exit(False);
 
-
-  // int i,test, x, z;
-//m := TRegEx.Match(Line,'^\s*(?<vartype>'+rxType+')\s+(?<vars>(('+rxID+')\s*\,?)+)\s*;',[roSingleLine]);
   m := TRegEx.Match(Line,'^\s*(?<vartype>'+rxType+')\s+'
                         +'(?<vars>(('+rxID+')\s*'
                         +'(\[\s*(?<arraysize1>\d)\s*\])?\s*'
@@ -1654,7 +1553,6 @@ var
 begin
   // parse the routine arguments
   for p in s.Split([',']) do
-//  for m in TRegEx.Matches(p, '\s*(?<direction>(?:struct\s+|in\s+|out\s+|inout\s+|const\s+)?)(?<type>'+rxType+')\s+(?<pointer>[\*\&]?)(?<varname>'+rxID+')\s*') do
     for m in TRegEx.Matches(p, '\s*(?<direction>in\s+|out\s+|inout\s+|const\s+)?(?<type>'+rxType+')\s+(?<pointer>[\*\&]?)(?<varname>'+rxID+')\s*') do
     begin
       dir := m.Groups['direction'].Value.Trim;
@@ -1682,9 +1580,6 @@ begin
         False,
         False);
 
-
-      // params.Add(param);
-      // Result := Result + format('%s%s %s:%s',[ ifthen(result='','',';'), param.dir, param.name,param.&type ]);
     end;
 end;
 
@@ -1820,8 +1715,6 @@ var
   code:TCode;
   isStatic,isInline,isDestructor, isVirtual:boolean;
   s,comment:string;
-//  isFar:boolean;
-//  isPascal:boolean;
 begin
   Assert(not Assigned(aRoutine));
 
@@ -1932,8 +1825,6 @@ var
   isStatic,isInline,isDestructor, isVirtual:boolean;
   comment:string;
   classDef:TClassDef;
-//  isFar:boolean;
-//  isPascal:boolean;
 begin
   try
     m := TRegEx.Match(c.Trim, rxMethod , [roSingleLine] );
@@ -1962,8 +1853,6 @@ begin
   FuncName     := m.Groups['funcname'].Value;
   ParameterStr := m.Groups['parameters'].Value;
   CodeStr      := m.Groups['code'].Value;
-//IsFar        := m.Groups['far'].Value<>'';
-//IsPascal     := m.Groups['pascal'].Value<>'';
 
   isDestructor := m.Groups['destructor'].Value='~';
 
@@ -2053,12 +1942,6 @@ begin
       Name := m.Groups['name'].Value;
       Code.Lines.Clear;
       Code.Lines.InsertRange(0,c.Split([sLineBreak]));
-  {    if length(code.Lines)>1 then
-      begin
-        Move(Code.Lines[1],Code.Lines[0],length(Code.Lines)-1);
-        Setlength(code.Lines,length(code.Lines)-1);
-      end;
-  }
       v := TVariableList.Create(nil);
       v.Name := 'Fields';
       getLocalVars(Code,v);
@@ -2181,7 +2064,6 @@ begin
     pas := pas + [def];
 
     def.FParentType := '';
-//    pas.ParentType := m.Groups['parentclass'].Value;
     cd := c.Substring( m.Index + m.Length, MaxInt).Trim;
     cd := cd.TrimRight(['}']);
     classDef       := cd{m.Groups['classdef'].Value}.Split([sLineBreak]);
@@ -2293,7 +2175,6 @@ const
   scale = 0.4;
 begin
   // search for functions by pattern..
-//  mc := TRegEx.Matches(aCCode, '^(?<indent>\s*)(static\s+)?(inline\s+)?(?<return_type>'+rxType+')\s*(?<classname>'+rxID+'::)?(?<funcname>'+rxID+')\s*\(\s*(?<params>[^\)]*)\s*\)[^{|^;]*\{' ,                          [roMultiLine]);
   rt := nil;
 
   mc := TRegEx.Matches(aCCode, rxMethodHeader , [ roMultiLine ]);
@@ -2356,9 +2237,6 @@ begin
 
     if aRoutine<>'' then
     begin
-//      for J := m.Index to I do
-//        if not CharInSet(aCCode[J],[#13,#10]) then
-//          t[J] := PARSED_MARKER;
       if c_FunctionToPas(aPascalUnit,aRoutine,rt) then
       begin
         cl := aPascalUnit.getClassByName(rt.ClassName);
@@ -2408,8 +2286,6 @@ var
   LType:String;
 const
   rx = '^\s*#define\s+(?<name>'+rxID+')\s+(?<expr>.*)\s*$';
-//  rx2 = '^\s*#define\s+'+rxID+'\s+.*$';
-
   rx3 = '^\s*const\s+(?<type>'+rxType+')\s+(?<name>'+rxID+')\s*\=\s*(?<expr>.*)\s*\;\s*$'; // const int kControllerPitchStep = 130;
   rx4 = '^\s*const\s+(?<type>'+rxType+')\s+(?<name>'+rxID+')\s*\[\s*\]\s*\=\s*(?<expr>.*)\s*\;\s*$'; // const char filename[] = "XYZ.DAT";
 begin
@@ -2762,11 +2638,6 @@ begin
   macro.Identifier := 'EXPORTCALL';
   macro.Replacements := ['__declspec(dllexport) __stdcall'];
   ApplyMacro(s,macro);
-//  Result.usesListIntf.AddUnit( 'SysUtils' );
-//  GlobalClass.Add(c_FunctionToPas('int PostInc(inout int i){'+sLineBreak+'  result = i;'+sLineBreak+'  i += 1;'  +sLineBreak+'}'));
-//  GlobalClass.Add(c_FunctionToPas('int PostDec(inout int i){'+sLineBreak+'  result = i;'+sLineBreak+'  i -= 1;'  +sLineBreak+'}'));
-//  GlobalClass.Add(c_FunctionToPas('int PreInc(inout int i){ '+sLineBreak+'  i += 1;'    +sLineBreak+'result = i;'+sLineBreak+'}'));
-//  GlobalClass.Add(c_FunctionToPas('int PreDec(inout int i){ '+sLineBreak+'  i -= 1;'    +sLineBreak+'result = i;'+sLineBreak+'}'));
   aOnProgress(0.05,'Finding units...');
   AddUnits(Result, s, t);
 //  aOnProgress(0.10,'Finding classes...');

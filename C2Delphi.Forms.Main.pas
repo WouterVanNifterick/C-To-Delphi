@@ -97,13 +97,11 @@ type
     procedure ApplicationEvents1Hint(Sender: TObject);
     procedure ApplicationEvents1Exception(Sender: TObject; E: Exception);
     procedure FormDestroy(Sender: TObject);
-    procedure edCCodeClick(Sender: TObject);
     procedure edPascalCodeClick(Sender: TObject);
     procedure edCCodeSpecialLineColors(Sender: TObject; Line: Integer;
       var Special: Boolean; var FG, BG: TColor);
     procedure edPascalCodeSpecialLineColors(Sender: TObject; Line: Integer;
       var Special: Boolean; var FG, BG: TColor);
-    procedure edPascalCodeProcessCommand(Sender: TObject; var Command: TSynEditorCommand; var AChar: Char; Data: Pointer);
     procedure TreeView1CustomDrawItem(Sender: TCustomTreeView;
       Node: TTreeNode; State: TCustomDrawState; var DefaultDraw: Boolean);
   private
@@ -207,7 +205,6 @@ begin
            begin
              ProgressBar1.Position := round(Progress * 100);
              Statusbar1.Panels[2].Text := round(Progress * 100).toString+'% '+ Text;
-//             ListBox1.Items.Add(Statusbar1.Panels[2].Text );
              if ListBox1.Count>0 then
                ListBox1.Perform(lb_SetTopIndex,ListBox1.Count-1,0);
            end);
@@ -319,7 +316,6 @@ begin
   fn := TPath.Combine(TPath.GetTempPath, Pas.Name+'_tmp.pas');
   edPascalCode.Lines.SaveToFile(fn);
   t := Parse(fn,ex);
-//  ListBox1.Clear;
   ListBox1.Items.Add(t);
   TFile.Delete(fn);
 {$ENDIF}
@@ -329,12 +325,6 @@ end;
 procedure TfrmMain.edPascalCodeClick(Sender: TObject);
 begin
   edPascalCodeCaretChanged(edPascalCode, edPascalCode.CaretX, edPascalCode.CaretY);
-end;
-
-procedure TfrmMain.edPascalCodeProcessCommand(Sender: TObject;
-  var Command: TSynEditorCommand; var AChar: Char; Data: Pointer);
-begin
-  //
 end;
 
 procedure TfrmMain.edPascalCodeSpecialLineColors(Sender: TObject;
@@ -370,12 +360,7 @@ begin
   dws:=TDelphiWebScript.Create(nil);
 {$ENDIF}
   CFileName := '';
-//  edCCode.Highlighter.LoadFromFile('Highlighters\c++.json');
-//  edCCode.Highlighter.Colors.LoadFromFile('Colors\Monokai.json');
   edCCode.Color := $00222827;
-//  edPascalCode.Highlighter.LoadFromFile('Highlighters\object pascal.json');
-//  edPascalCode.Highlighter.Colors.LoadFromFile('Colors\Monokai.json');
-//  edPascalCode.Highlighter.LoadFromFile('c:\dev\lib\Bone\TBCEditor\Highlighters\object pascal.json');
   edCCode.Text :=
         'void hello(int x){'+sLineBreak+
         '    printf("Hello world %d\n",x);'+sLineBreak+
@@ -420,7 +405,6 @@ begin
 
   Line := StrToInt(m.Groups['Line'].Value)-1;
   Col := StrToInt(m.Groups['Col'].Value);
-//  Msg := m.Groups['Message'].Value;
 
   pos.Char := Col;
   pos.Line := Line;
@@ -524,8 +508,6 @@ begin
     end;
     if Sender<>edCCode then
     begin
-//      edCCode.SelStart  := e.Sourceinfo.Position +1;
-//      edCCode.SelLength := e.Sourceinfo.Length+1;
       edCCode.TopLine   := p1.Line;
       edCCode.Refresh;
     end;
@@ -539,8 +521,6 @@ begin
     p3 := getPosition(edPascalCode.Lines, e.Renderinfo.Position);
     if Sender<>edPascalCode then
     begin
-//      edPascalCode.SelStart := e.Renderinfo.Position - 1;
-//      edPascalCode.SelLength := e.Renderinfo.Length+1;
       edPascalCode.TopLine   := p3.Line - (p1.Line - edCCode.TopLine + 1);
       edPascalCode.Refresh;
     end;
@@ -637,8 +617,6 @@ begin
     else
     begin
       edCCode.Highlighter := SynCppSyn1;
-//      edCCode.Highlighter.LoadFromFile('Highlighters\c++.json');
-//      edCCode.Highlighter.Colors.LoadFromFile('Colors\Monokai.json');
       edCCode.Color := $00222827;
     end;
 
@@ -779,7 +757,6 @@ begin
   edPascalCode.Enabled := False;
   edPascalCode.Color := $000033;
   ListBox1.Clear;
-//  edPascalCode.Text := FixComments(edCCode.Text); exit;
 
   task := TTask.Create(
     procedure
@@ -808,7 +785,6 @@ begin
                ProgressBar1.Position := 0;
                Statusbar1.Panels[2].Text := '';
              end;
-//             ListBox1.Items.Add(Statusbar1.Panels[2].Text );
              if ListBox1.Count>0 then
                ListBox1.Perform(lb_SetTopIndex,ListBox1.Count-1,0);
            end);
@@ -842,9 +818,5 @@ begin
   task.Start;
 end;
 
-procedure TfrmMain.edCCodeClick(Sender: TObject);
-begin
-//
-end;
 
 end.
