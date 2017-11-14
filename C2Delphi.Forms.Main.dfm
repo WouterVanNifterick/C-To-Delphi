@@ -128,16 +128,6 @@ object frmMain: TfrmMain
     Align = alLeft
     BevelOuter = bvNone
     TabOrder = 5
-    object spl1: TSplitter
-      Left = 312
-      Top = 0
-      Width = 8
-      Height = 653
-      Align = alRight
-      ResizeStyle = rsUpdate
-      ExplicitLeft = 352
-      ExplicitTop = 6
-    end
     object StatusBar3: TStatusBar
       Left = 0
       Top = 653
@@ -154,7 +144,7 @@ object frmMain: TfrmMain
     object edCCode: TSynEdit
       Left = 0
       Top = 0
-      Width = 312
+      Width = 528
       Height = 653
       Align = alClient
       Color = 2238503
@@ -180,36 +170,7 @@ object frmMain: TfrmMain
       OnChange = edCCodeChange
       OnSpecialLineColors = edCCodeSpecialLineColors
       FontSmoothing = fsmNone
-    end
-    object edPreProcessed: TSynEdit
-      Left = 320
-      Top = 0
-      Width = 208
-      Height = 653
-      Align = alRight
-      Color = 2238503
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -13
-      Font.Name = 'Courier New'
-      Font.Style = []
-      TabOrder = 2
-      OnClick = edCCodeSelectionChanged
-      Gutter.Font.Charset = DEFAULT_CHARSET
-      Gutter.Font.Color = clWindowText
-      Gutter.Font.Height = -11
-      Gutter.Font.Name = 'Courier New'
-      Gutter.Font.Style = []
-      Gutter.Visible = False
-      Gutter.Width = 0
-      Highlighter = SynCppSyn1
-      Lines.Strings = (
-        'edCCode')
-      Options = [eoAltSetsColumnMode, eoAutoIndent, eoDragDropEditing, eoEnhanceEndKey, eoGroupUndo, eoScrollPastEol, eoShowScrollHint, eoSmartTabDelete, eoSmartTabs, eoTabsToSpaces]
-      RightEdge = 0
-      OnChange = edCCodeChange
-      OnSpecialLineColors = edCCodeSpecialLineColors
-      FontSmoothing = fsmNone
+      ExplicitWidth = 312
     end
   end
   object Panel2: TPanel
