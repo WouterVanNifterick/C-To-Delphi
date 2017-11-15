@@ -2,8 +2,8 @@
 
 interface
 
-{$DEFINE USE_DELPHIAST}
-{$DEFINE USE_DWS}
+{.$DEFINE USE_DELPHIAST}
+{.$DEFINE USE_DWS}
 
 uses
   Winapi.Windows,
@@ -583,22 +583,17 @@ begin
     begin
       p := TPascalUnit.Create(nil);
       try
-      c_to_pas(ReadCCodeFromFile(cfn),t,changefileext(ExtractFilename(cfn),''),
-         procedure(progress:double;const text:string)
-         begin
-           TThread.Synchronize(TThread.CurrentThread,
-           procedure
-           begin
-             ProgressBar1.Position := round(Progress * 100);
-             Statusbar1.Panels[2].Text := round(Progress * 100).toString+'% '+ Text;
-//             ListBox1.Items.Add(Statusbar1.Panels[2].Text );
-             if ListBox1.Count>0 then
-               ListBox1.Perform(lb_SetTopIndex,ListBox1.Count-1,0);
-           end);
-         end,
-         p
-      );
-      TFile.WriteAllText( ChangeFileExt(fileName,'.pas'), p.toPascal);
+        c_to_pas(ReadCCodeFromFile(cfn),t,changefileext(ExtractFilename(cfn),''),
+          procedure(progress:double;const text:string)
+          begin
+            ProgressBar1.Position := round(Progress * 100);
+            Statusbar1.Panels[2].Text := round(Progress * 100).toString+'% '+ Text;
+            if ListBox1.Count>0 then
+              ListBox1.Perform(lb_SetTopIndex,ListBox1.Count-1,0);
+          end,
+          p
+        );
+        TFile.WriteAllText( ChangeFileExt(fileName,'.pas'), p.toPascal);
       finally
         p.Free;
       end;
