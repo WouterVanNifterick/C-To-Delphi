@@ -193,6 +193,7 @@ type
     function ToString:string;override;
     function ToDeclarationPascal:String;
     function ToImplementationPascal(aClassName:string):String;
+    function Equals(Obj: TObject): Boolean; override;
 
   end;
 
@@ -575,6 +576,33 @@ begin
   Visibility  := TVisibility.DefaultVisibility;
 end;
 
+function TRoutine.Equals(Obj: TObject): Boolean;
+var r:TRoutine; i:Integer;
+begin
+  if not (Obj is TRoutine) then
+    Exit(False);
+
+  if Obj=self then
+    Exit(True);
+
+  r := TRoutine(Obj);
+  if not SameText(r.Name,Self.Name) then
+    Exit(False);
+
+  if r.Parameters.Count<>Self.Parameters.Count then
+    Exit(False);
+
+  for I := 0 to self.Parameters.Count-1 do
+  begin
+    if Parameters[I].Name <> r.Parameters[I].Name then
+      Exit(False);
+    if TVariable(Parameters[I]).&Type <> TVariable(r.Parameters[I]).&Type then
+      Exit(False);
+  end;
+  Exit(True);
+
+end;
+
 function TRoutine.ToDeclarationPascal: String;
 var sl:TStringBuilder; s:string;
 begin
@@ -590,7 +618,8 @@ begin
 
     sl.Append('  ');
     if &Static then
-      sl.Append('class ');
+      if (FOwner=nil) or (TClassDef(FOwner).FKind <> TClassKind.&unit) then
+        sl.Append('class ');
     sl.Append(cRoutineType[RoutineType]);
     sl.Append(' ');
     sl.Append(Esc(self.FName));
@@ -606,7 +635,9 @@ begin
     if &Override then sl.Append('override;');
     if &Overload then sl.Append('overload;');
     if &Inline   then sl.Append('inline;');
-    if &Static   then sl.Append('static;');
+    if &Static   then
+      if (FOwner=nil) or (TClassDef(FOwner).FKind <> TClassKind.&unit) then
+        sl.Append('static;');
     if &Virtual  then sl.Append('virtual;');
 
     Result := sl.ToString;
@@ -676,11 +707,19 @@ var i:integer;
 begin
   Result := True;
   for I := 0 to high(FMethods) do
-    if (FMethods[I].FName=m.FName) then
+  begin
+    if SameText(FMethods[I].Name ,m.Name) then
+    begin
+      FMethods[I].Overload := True;
+      m.Overload := True;
+    end;
+
+    if FMethods[I].Equals(m) then
     begin
       Result := False;
       Break;
     end;
+  end;
 
   if Result then
     FMethods := FMethods + [m]
@@ -914,8 +953,6 @@ procedure TPascalElement.SetDefaultVisible;
   begin
     if el = nil then
       Exit;
-
-    OutputDebugString(pchar(el.ToString));
 
     if el is TVariableList then
       if el.Count=0 then

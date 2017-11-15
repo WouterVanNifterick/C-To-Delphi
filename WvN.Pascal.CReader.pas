@@ -1397,7 +1397,7 @@ end;
 
 
 
-function GetVariablesFromLine(var vars:TArray<TVariable>; const Line: string; aVariableList: TVariableList):boolean;
+function GetVariablesFromLine(const Line: string; aVariableList: TVariableList):boolean;
 var
   m: TMatch;
   i: Integer;
@@ -1409,32 +1409,32 @@ begin
     Exit(False);
 
   // int test4_TT
-  m := TRegEx.Match(Line,'^\s*(struct\s+)?(?<vartype>' + rxType + ')\s+(?<varname>' + rxID + ')\s*$');
+  m := TRegEx.Match(Line,'^\s*(struct\s+)?(?<vartype>' + rxType + ')\s+(?<varname>' + rxID + ')\s*;\s*$');
   if m.Success then
   begin
     if m.Groups['vartype'].Value <> 'return' then
     begin
-      vars := vars + [TVariable.Create(aVariableList, m.Groups['varname'].Value, convertType(m.Groups['vartype'].Value),TDir.inout)];
+      TVariable.Create(aVariableList, m.Groups['varname'].Value, convertType(m.Groups['vartype'].Value),TDir.inout);
       exit(true);
     end;
   end;
 
   // int test = 5*5+xxx
-  m := TRegEx.Match(Line, '^\s*(struct\s+)?(?<vartype>' + rxType + ')\s+(?<varname>' + rxID + ')\s*=\s*(?<expression>.*)\s*$');
+  m := TRegEx.Match(Line, '^\s*(struct\s+)?(?<vartype>' + rxType + ')\s+(?<varname>' + rxID + ')\s*=\s*(?<expression>.*)\s*;\s*$');
   if m.Success then
   begin
     if m.Groups['vartype'].Value <> 'return' then
     begin
-      vars := vars + [TVariable.Create(aVariableList, m.Groups['varname'].Value, convertType(m.Groups['vartype'].Value),TDir.inout)];
+      TVariable.Create(aVariableList, m.Groups['varname'].Value, convertType(m.Groups['vartype'].Value),TDir.inout);
       exit(true);
     end;
   end;
 
   // const int base = 508887777
-  m := TRegEx.Match(Line, '^\s*(?<const>const)\s+(struct\s+)?(?<vartype>' + rxType + ')\s+(?<varname>' + rxID + ')\s*=\s*(?<expression>.*)\s*;\s*(?<comment>.*)\s*$');
+  m := TRegEx.Match(Line, '^\s*(?<const>const)\s+(struct\s+)?(?<vartype>' + rxType + ')\s+(?<varname>' + rxID + ')\s*=\s*(?<expression>.*)\s*;\s*(?<comment>.*)\s*;\s*$');
   if m.Success then
   begin
-    vars := vars + [ TVariable.Create( aVariableList,  m.Groups['varname'].Value, convertType(m.Groups['vartype'].Value), TDir.in, False, True, m.Groups['expression'].Value, m.Groups['comment'].Value.Trim.TrimLeft(['/']).Trim) ];
+    TVariable.Create( aVariableList,  m.Groups['varname'].Value, convertType(m.Groups['vartype'].Value), TDir.in, False, True, m.Groups['expression'].Value, m.Groups['comment'].Value.Trim.TrimLeft(['/']).Trim);
     exit(true);
   end;
 
@@ -1446,10 +1446,9 @@ begin
   begin
     if m.Groups['vartype'].Value <> 'return' then
     begin
-      vars := vars + [
-        TVariable.Create(nil, m.Groups['varname'].Value,
+      TVariable.Create(aVariableList, m.Groups['varname'].Value,
         m.Groups['pointer'].Value.Replace('*','^') + ConvertType(m.Groups['vartype'].Value),
-        TDir.inout)];
+        TDir.inout);
       exit(true);
     end;
  end;
@@ -1459,7 +1458,7 @@ begin
   m := TRegEx.Match(Line, '^(?<indent>\s*)for\s*\(\s*(?<vartype>int(?:\s+))(?<varname>' + rxId + ')\s*\=\s*(?<min>[^\;])\s*;\s*(?<varname2>' + rxID + ')\s*(?<op><[\=]{0,1})\s*(?<max>.*)\s*\;\s*(?<varname3>\w+\+\+)\s*\)\s*(.*)', [roSingleLine]);
   if m.Success then
   begin
-    vars := vars + [TVariable.Create(aVariableList, m.Groups['varname'].Value, convertType(m.Groups['vartype'].Value.Trim),TDir.inout)];
+    TVariable.Create(aVariableList, m.Groups['varname'].Value, convertType(m.Groups['vartype'].Value.Trim),TDir.inout);
     exit(true);
   end;
 
@@ -1469,10 +1468,10 @@ begin
   begin
     if TryStrToInt(m.Groups['arraysize1'].Value, i) then
     if TryStrToInt(m.Groups['arraysize2'].Value, i) then
-      vars := vars + [TVariable.Create(aVariableList, m.Groups['varname'].Value, format('array[0..%d,0..%d] of %s', [
+      TVariable.Create(aVariableList, m.Groups['varname'].Value, format('array[0..%d,0..%d] of %s', [
         StrToInt(m.Groups['arraysize1'].Value) - 1,
         StrToInt(m.Groups['arraysize2'].Value) - 1,
-        convertType(m.Groups['vartype'].Value)]),TDir.inout)];
+        convertType(m.Groups['vartype'].Value)]),TDir.inout);
     exit(true);
   end;
 
@@ -1483,14 +1482,14 @@ begin
   begin
     if m.Groups['arraysize'].Value='' then
       // int test[]
-      vars := vars + [TVariable.Create(aVariableList, m.Groups['varname'].Value, format('array of %s', [convertType(m.Groups['vartype'].Value)]),TDir.inout)]
+      TVariable.Create(aVariableList, m.Groups['varname'].Value, format('array of %s', [convertType(m.Groups['vartype'].Value)]),TDir.inout)
     else
       if TryStrToInt(m.Groups['arraysize'].Value, i) then
         // int test[4]
-        vars := vars + [TVariable.Create(aVariableList, m.Groups['varname'].Value, format('array[0..%d] of %s', [StrToInt(m.Groups['arraysize'].Value) - 1, convertType(m.Groups['vartype'].Value)]),TDir.inout)]
+        TVariable.Create(aVariableList, m.Groups['varname'].Value, format('array[0..%d] of %s', [StrToInt(m.Groups['arraysize'].Value) - 1, convertType(m.Groups['vartype'].Value)]),TDir.inout)
       else
         // char name[NAME_MAX+1]
-        vars := vars + [TVariable.Create(aVariableList, m.Groups['varname'].Value, format('array[0..(%s)-1] of %s', [m.Groups['arraysize'].Value, convertType(m.Groups['vartype'].Value)]),TDir.inout)];
+        TVariable.Create(aVariableList, m.Groups['varname'].Value, format('array[0..(%s)-1] of %s', [m.Groups['arraysize'].Value, convertType(m.Groups['vartype'].Value)]),TDir.inout);
     exit(true);
   end;
 
@@ -1526,7 +1525,7 @@ begin
               ])
         end;
 
-        vars := vars + [TVariable.Create(aVariableList,  lVarName, lType,TDir.inout) ];
+        TVariable.Create(aVariableList,  lVarName, lType,TDir.inout) ;
       end;
 
     exit(true);
@@ -1536,7 +1535,7 @@ begin
   m := TRegEx.Match(Line, '^\s*(?<static>static)\s+(?<const>const)\s+(?<vartype>' + rxType + ')\s+(?<varname>' + rxID + ')\s*\=\s*(?<value>.*)\;$');
   if m.Success then
   begin
-    vars := vars + [TVariable.Create(aVariableList, m.Groups['varname'].Value, convertType(m.Groups['vartype'].Value), TDir.&in, true, true, m.Groups['value'].Value )];
+    TVariable.Create(aVariableList, m.Groups['varname'].Value, convertType(m.Groups['vartype'].Value), TDir.&in, true, true, m.Groups['value'].Value );
     exit(true);
   end;
 
@@ -1657,11 +1656,10 @@ end;
 
 
 
-procedure getLocalVars(const aCode:TCode; Result:TVariableList);
-var l:string; va:TArray<TVariable>;vis:TVisibility; i:integer;
+procedure getLocalVars(const aCode:TCode; aVarList:TVariableList);
+var l:string; vis:TVisibility; i:integer;
 begin
   vis := TVisibility.DefaultVisibility;
-  va := [];
   for l in aCode.Lines do
   begin
     if l.Trim = 'public:' then
@@ -1670,12 +1668,10 @@ begin
     if l.Trim = 'private:' then
       vis := TVisibility.&Private;
 
-    va := [];
-    GetVariablesFromLine(va, l, Result);
-    for I := 0 to High(va) do
-    begin
-      va[I].Visibility := vis;
-    end;
+//    va := [];
+    GetVariablesFromLine(l, aVarList);
+    for I := 0 to aVarList.Count-1 do
+      TVariable(aVarList[I]).Visibility := vis;
   end;
 end;
 
@@ -1923,9 +1919,6 @@ end;
 
 
 
-
-
-
 function c_StructToPas(const aPascalUnit:TPascalUnit; c:string;var outClass:TClassDef):Boolean;
 var
   m:TMatch;
@@ -2046,7 +2039,6 @@ end;
 
 function c_class_to_pas(u:TPascalUnit; c:string; out pas:TArray<TClassDef>):Boolean;
 var  mc:TMatchCollection; m,m2:TMatch; classDef:TArray<string>;i,j:integer;
-  va:tarray<TVariable>;
   vis:TVisibility;
   cd:string;
   rt:TRoutine;
@@ -2082,8 +2074,7 @@ begin
         Continue;
       end;
 
-      va := [];
-      GetVariablesFromLine( va, classDef[i], def.FMembers);
+      GetVariablesFromLine(classDef[i], def.FMembers);
 
       m2 := TRegEx.Match(classDef[i], rxMethodDef);
       if m2.Success then
@@ -2096,8 +2087,8 @@ begin
         end;
       end;
 
-      for J := 0 to High(va) do
-        va[J].Visibility := vis;
+      for J := 0 to def.FMembers.Count-1 do
+        TVariable(def.FMembers[J]).Visibility := vis;
     end;
     u.AddClass(def);
   end;
