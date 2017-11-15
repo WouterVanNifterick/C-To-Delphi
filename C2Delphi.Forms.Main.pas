@@ -636,17 +636,17 @@ procedure TfrmMain.UpdateTree;
       begin
         AddNode(p.Children[I],tn);
       end;
+
+    if (p is TRoutine) or (p is TVariableList) then
+      tn.Collapse(True)
+    else
+      tn.Expand(false);
   end;
 begin
   TreeView1.Items.BeginUpdate;
   TreeView1.Items.Clear;
   AddNode(pas,nil);
-
-  TreeView1.FullExpand;
   TreeView1.Items.EndUpdate;
-
-
-
 end;
 
 procedure TfrmMain.Action1Execute(Sender: TObject);
