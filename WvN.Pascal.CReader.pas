@@ -826,7 +826,7 @@ begin
   // "int *test;"
   // vartype : int
   // varname : test
-  m := TRegEx.Match(c,'(?<indent>\s*)(?<vartype>'+rxType+')\s+[\*]?(?<varname>'+rxID+')\s*;',[roSingleLine]);
+  m := TRegEx.Match(c,'^(?<indent>\s*)(?<vartype>'+rxType+')\s+[\*]?(?<varname>'+rxID+')\s*;',[roSingleLine]);
   if m.Success then
   begin
     pas := '';
