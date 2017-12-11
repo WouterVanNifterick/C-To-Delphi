@@ -594,9 +594,9 @@ begin
 
   for I := 0 to self.Parameters.Count-1 do
   begin
-    if Parameters[I].Name <> r.Parameters[I].Name then
+    if not SameText(Parameters[I].Name, r.Parameters[I].Name) then
       Exit(False);
-    if TVariable(Parameters[I]).&Type <> TVariable(r.Parameters[I]).&Type then
+    if not SameText(TVariable(Parameters[I]).&Type, TVariable(r.Parameters[I]).&Type) then
       Exit(False);
   end;
   Exit(True);
@@ -675,7 +675,11 @@ begin
     if Self.RoutineType=TRoutineType.&function then
       sl.Append(':'+Self.ReturnType);
 
-    sl.AppendLine(';');
+    sl.Append(';');
+    if &Overload then sl.Append('overload;');
+    if &Inline then sl.Append('inline;');
+    sl.AppendLine;
+
     if self.LocalVars.Count>0 then
       sl.Append( LocalVars.ToPascal(true) );
 
@@ -764,7 +768,7 @@ end;
 
 function TClassDef.ToPascalDeclaration: string;
 var sl:TStringList;
-  m: TRoutine;
+  m,n: TRoutine;
 begin
   sl := TStringList.Create;
   try
@@ -805,6 +809,18 @@ begin
       end;
       sl.Add( FMembers.ToPascal(true).TrimRight  );
     end;
+
+    for m in FMethods  do
+      for n in FMethods do
+        if m <> n then
+          if m.Name = n.Name then
+          begin
+            m.Overload := True;
+            n.Override := True;
+          end;
+
+
+      sl.Add(m.ToDeclarationPascal);
 
     for m in FMethods  do
       sl.Add(m.ToDeclarationPascal);

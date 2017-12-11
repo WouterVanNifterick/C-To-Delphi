@@ -2231,18 +2231,20 @@ begin
         rt.Sourceinfo.Length   := aRoutine.Length;
 
         rt.code.Sourceinfo.Position := rt.Sourceinfo.Position;
+
+        // Convert switch statements
         if rt.Code.Count > 0 then
-        for Index := 0 to rt.code.Count-1 do
-        begin
-          if rt.code[Index] is TSwitch then
+          for Index := 0 to rt.code.Count-1 do
           begin
-            rt.code[Index].Sourceinfo.Position := rt.code[Index].Sourceinfo.Position + rt.Sourceinfo.Position;
-            for J := 0 to rt.Code[Index].Count-1 do
+            if rt.code[Index] is TSwitch then
             begin
-              rt.Code[Index][J].Sourceinfo.Position := rt.Code[Index][J].Sourceinfo.Position + rt.Code.Sourceinfo.Position;
+              rt.code[Index].Sourceinfo.Position := rt.code[Index].Sourceinfo.Position + rt.Sourceinfo.Position;
+              for J := 0 to rt.Code[Index].Count-1 do
+              begin
+                rt.Code[Index][J].Sourceinfo.Position := rt.Code[Index][J].Sourceinfo.Position + rt.Code.Sourceinfo.Position;
+              end;
             end;
           end;
-        end;
 
         if rt.Comment = '' then
           rt.Comment := c;
