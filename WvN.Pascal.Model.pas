@@ -90,7 +90,7 @@ type
   public
     constructor Create(AOwner:TPascalElement; aName:string; aType:string;aDir:TDir=TDir.none; aIsStatic:Boolean=false; aHasValue:Boolean=false; aValue:string=''; aComment:string=''); reintroduce;
     function ToString:string;override;
-    function ToPascal:String;
+    function ToPascal:String;override;
 
     property HasValue:Boolean       read FHasValue;
     property Dir:TDir               read FDir;
@@ -105,7 +105,7 @@ type
   TVariableList=class(TPascalElement)
   public
     function getLongestName:integer;
-    function ToPascal(Indent:Boolean):String;
+    function ToPascal(Indent:Boolean):String;reintroduce;
   end;
 
   TArrayDef1D=class(TPascalElement)
@@ -113,7 +113,7 @@ type
     itemType:string;
     rangeMin,rangeMax:string;
     Items:TArray<string>;
-    function ToPascal:string;
+    function ToPascal:string;override;
     function ToString:string;override;
   end;
 
@@ -125,7 +125,7 @@ type
       rangeMin,rangeMax:string;
     end;
     Items:TArray<TArray<string>>;
-    function ToPascal:string;
+    function ToPascal:string;override;
     function ToString:string;override;
   end;
 
@@ -140,7 +140,7 @@ type
   TEnumDef=class(TPascalElement)
   public
     Items:TArray<TEnumItem>;
-    function ToPascal:string;
+    function ToPascal:string;override;
   end;
 
   TCode=class(TPascalElement)
@@ -149,12 +149,12 @@ type
   public
     Lines:TList<string>;
     procedure Add(const s:String);
-    function ToPascal:String;
+    function ToPascal:String;override;
     procedure Cleanup;
     procedure Align;
     destructor Destroy; override;
     property LineCount:integer read GetLineCount;
-    constructor Create(aOwner:TPascalElement; c:TArray<string>);
+    constructor Create(aOwner:TPascalElement; c:TArray<string>);reintroduce;
 
   end;
 
@@ -188,7 +188,7 @@ type
         aInline:Boolean=false;
         aStatic:Boolean=false;
         aVirtual:Boolean=false;
-        aComment:string='');
+        aComment:string='');reintroduce;
     procedure Cleanup;
     function ToString:string;override;
     function ToDeclarationPascal:String;
@@ -210,7 +210,7 @@ type
     function ToPascalDeclaration:string;
     function ToPascalImplementation:string;
     function ToString:string;override;
-    constructor Create(aOwner:TPascalElement;aTypename:string; aMembers:TVariableList; aKind:TClassKind);
+    constructor Create(aOwner:TPascalElement;aTypename:string; aMembers:TVariableList; aKind:TClassKind);reintroduce;
   end;
 
   TUsesListItem=class(TPascalElement)
@@ -222,7 +222,7 @@ type
     &Unit:TPascalUnit;
     constructor Create(aOwner:TPascalElement);override;
     procedure AddUnit(const s: string);
-    function ToPascal:string;
+    function ToPascal:string;override;
   end;
 
   TCase=class(TPascalElement)
@@ -231,7 +231,7 @@ type
     procedure SetCode(const Value: TCode);
   public
     Id:string;
-    function ToPascal(aIndent:integer=6; aAlign:integer=0):string;
+    function ToPascal(aIndent:integer=6; aAlign:integer=0):string;reintroduce;
     property Code:TCode read FCode write SetCode;
 
   end;
@@ -249,7 +249,8 @@ type
     Condition,
     IfTrue,
     IfFalse : TCode;
-    constructor Create(aOwner:TPascalElement; aCondition, aIfTrue, aIfFalse : TCode);
+  public
+    constructor Create(aOwner:TPascalElement; aCondition, aIfTrue, aIfFalse : TCode);reintroduce;
     function ToPascal:string;override;
   end;
 
@@ -273,7 +274,7 @@ type
     function getClassByName(s:string):TClassDef;
     function AddClass(c:TClassDef):TClassDef;
     function ToString:string; override;
-    function toPascal:string;
+    function ToPascal:string;override;
   end;
 
   TLoopOperator=(EQ,LT,LT_EQ,GT,GT_EQ);
@@ -285,7 +286,7 @@ type
     Op:TLoopOperator;
     Dir:TLoop.TDir;
     StartVal,EndVal:string;
-    function toPascal:string;
+    function ToPascal:string;override;
   end;
 
 function Esc(Keyword:string):string;
@@ -332,7 +333,6 @@ end;
 
 
 constructor TVariable.Create(AOwner:TPascalElement; aName, aType: string;aDir:TDir=TDir.none;aIsStatic:Boolean=false; aHasValue:Boolean=false;aValue:string='';aComment:string='');
-var ix:integer;
 begin
   inherited Create(AOwner);
 
@@ -868,27 +868,30 @@ begin
   Lines.Add(s);
 end;
 
-procedure TCode.Align;
-var s,oldLine,Line:string; i,First,Last:integer;
-  p,maxPos:integer;
-  procedure DoAlign;
-  var J,t: Integer;
+procedure DoAlign(Lines:TList<string>; var p:integer; aFirstLine,aLastLine,MaxPos:integer);
+var J,t: Integer; s,oldLine:string;
+begin
+  if MaxPos>0 then
   begin
-    if MaxPos>0 then
+    for J := aFirstLine to aLastLine do
     begin
-      for J := First to Last do
-      begin
-        oldLine := Lines[J];
-        t := Pos(':=',OldLine);
-        s := StringOfChar(' ', MaxPos-t);
-        if P>3 then
-          Insert(s,OldLine,t);
-        Lines[J] := OldLine;
-      end;
+      oldLine := Lines[J];
+      t := Pos(':=',OldLine);
+      s := StringOfChar(' ', MaxPos-t);
+      if P>3 then
+        Insert(s,OldLine,t);
+      Lines[J] := OldLine;
     end;
   end;
+end;
+
+procedure TCode.Align;
+var
+  Line:string; i,First,Last:integer;
+  p,maxPos:integer;
 begin
   First := -1;
+  Last := -1;
   MaxPos := -1;
   for I := 0 to Lines.Count-1 do
   begin
@@ -903,14 +906,14 @@ begin
     end
     else
     begin
-      DoAlign;
+      DoAlign(Lines,P,First,last,maxPos);
       P := -1;
       First := -1;
       MaxPos := -1;
     end;
   end;
   if MaxPos>0 then
-    DoAlign;
+    DoAlign(Lines,p,First,last,maxPos);
 end;
 
 procedure TCode.Cleanup;
