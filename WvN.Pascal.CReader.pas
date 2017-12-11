@@ -2281,6 +2281,8 @@ begin
   for m in TRegEx.Matches(c, rx, [roMultiLine]) do
   begin
     val := m.Groups['expr'].Value;
+    if val.Trim.StartsWith('#include') then
+      Continue;
     val := val
             .Replace('<<',' shl ')
             .Replace('>>',' shr ')
