@@ -819,9 +819,6 @@ begin
             n.Override := True;
           end;
 
-
-      sl.Add(m.ToDeclarationPascal);
-
     for m in FMethods  do
       sl.Add(m.ToDeclarationPascal);
 
