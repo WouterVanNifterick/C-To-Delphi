@@ -76,6 +76,17 @@ const
 type
   TLoc=(None,InStringQ1,InStringQ2,InLineComment,InMultiLineComment);
 
+function IsFunction(const aCCode:string):boolean;
+var s:string;
+begin
+  for s in NonFunctions do
+    if aCCode.StartsWith(s) then
+      Exit(False);
+
+  Result := True;
+end;
+
+
 procedure ReplaceMatch(const c: string; const m: TMatch; aReplace: Char);
 begin
   c.Remove(m.Index, m.Length);
@@ -482,15 +493,8 @@ begin
     begin
       m := mc[n];
       // sometimes we accidentially ran into somethign that looks like a function
-      IsNonFunction := False;
-      for s in NonFunctions do
-        if m.Value.Trim.StartsWith(s) then
-        begin
-          IsNonFunction := True;
-          Break;
-        end;
-
-      if IsNonFunction then continue;
+      if not IsFunction(m.Value.Trim) then
+        Continue;
 
       // we've found a function signature.
       // now let's scan until we've found the final closing bracket
@@ -1727,9 +1731,8 @@ begin
 
   ReturnType   := m.Groups['returntype'].Value.Trim;
 
-  for s in NonFunctions do
-    if c.Trim.StartsWith(s) then
-      Exit(False);
+  if not IsFunction(c.Trim) then
+    Exit(False);
 
   ReturnType   := convertType( ReturnType );
 
@@ -2150,6 +2153,7 @@ begin
 
 end;
 
+
 procedure AddFunctions(const aPascalUnit: TPascalUnit; const aCCode: string; var t:string;aOnProgress:TOnProgress=nil);
 var
   m: TMatch;
@@ -2159,7 +2163,6 @@ var
   mc: TMatchCollection;
   I,Index:integer;
   s: string;
-  IsNonFunction: Boolean;
   J: Integer;
 const
   minv  = 0.3;
@@ -2172,16 +2175,8 @@ begin
   for m in mc do
   begin
     // sometimes we accidentially ran into somethign that looks like a function
-    IsNonFunction := False;
-    for s in NonFunctions do
-      if m.Value.Trim.StartsWith(s) then
-      begin
-        IsNonFunction := True;
-        Break;
-      end;
-
-    if IsNonFunction then continue;
-
+    if not IsFunction(m.Value.Trim) then
+      Continue;
 
     aRoutine := '';
     ScanUntilMatchingChar('{', '}', aCCode, m, aRoutine);
