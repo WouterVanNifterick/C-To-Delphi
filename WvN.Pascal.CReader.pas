@@ -26,7 +26,7 @@ const
   PARSED_MARKER_STR = PARSED_MARKER+PARSED_MARKER+PARSED_MARKER;
 
 const
-  NonFunctions:array[0..12] of string = ('if','enum','struct','for','else','while','switch','for','case','class','namespace','do','const');
+  NonFunctions:array[0..13] of string = ('if','enum','struct','for','else','while','switch','for','case','class','namespace','do','const','delete');
 
 const
   rxID     = '[a-zA-Z_\$][\w_]*(\s*\*)?';
@@ -475,7 +475,6 @@ var
   Routine: string;
   rt:TRoutine;
   Newcode:string;
-  IsNonFunction:boolean;s:string;
   u:TPascalUnit;
 const
   minv  = 0.8;
@@ -1714,7 +1713,7 @@ var
   localvars:TVariableList;
   code:TCode;
   isStatic,isInline,isDestructor, isVirtual:boolean;
-  s,comment:string;
+  comment:string;
 begin
   Assert(not Assigned(aRoutine));
 
@@ -2162,7 +2161,6 @@ var
   cl: TClassDef;
   mc: TMatchCollection;
   I,Index:integer;
-  s: string;
   J: Integer;
 const
   minv  = 0.3;
@@ -2631,7 +2629,7 @@ begin
   aOnProgress(0.05,'Finding units...');
   AddUnits(Result, s, t);
 //  aOnProgress(0.10,'Finding classes...');
-//  AddClassDefs(Result,s,t);
+  AddClassDefs(Result,s,t);
   aOnProgress(0.20,'Finding routines...');
 
   AddFunctions(Result, aCCode, t,aOnProgress);
