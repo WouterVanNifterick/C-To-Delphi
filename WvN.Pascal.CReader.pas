@@ -567,9 +567,6 @@ begin
   if SameText(s,'signed long') then Exit('int32');
   if SameText(s,'unsigned long') then Exit('uint32');
 
-
-  if SameText(s,'wchar_t') then Exit('WideChar');
-
   if SameText(s,'uint'  ) then Exit('cardinal');
   if SameText(s,'signed int'   ) then Exit('int32');
   if SameText(s,'unsigned int'   ) then Exit('uint32');
@@ -578,25 +575,31 @@ begin
   if SameText(s,'uint16') then Exit('uint16');
   if SameText(s,'uint32') then Exit('uint32');
   if SameText(s,'uint64') then Exit('uint64');
-  if SameText(s,'int32' ) then Exit('integer');
+
+  if SameText(s,'int8' ) then Exit('shortint');
   if SameText(s,'int16' ) then Exit('int16');
+  if SameText(s,'int32' ) then Exit('integer');
   if SameText(s,'int64' ) then Exit('int64');
 
   if SameText(s,'uint8_t')  then Exit('byte');
   if SameText(s,'uint16_t') then Exit('uint16');
   if SameText(s,'uint32_t') then Exit('uint32');
   if SameText(s,'uint64_t') then Exit('uint64');
-  if SameText(s,'int32_t') then Exit('integer');
+
+  if SameText(s,'int8_t') then Exit('shortint');
   if SameText(s,'int16_t') then Exit('int16');
+  if SameText(s,'int32_t') then Exit('integer');
   if SameText(s,'int64_t') then Exit('int64');
 
   if SameText(s,'long int')    then Exit('LongInt');
   if SameText(s,'long double') then Exit('Extended');
+
   if SameText(s,'__int64') then Exit('Int64');
   if SameText(s,'void') then Exit('');
   if SameText(s,'void*') then Exit('Pointer');
   if SameText(s,'char*') then Exit('PAnsiChar');
   if SameText(s,'char *') then Exit('PAnsiChar');
+  if SameText(s,'wchar_t') then Exit('WideChar');
   if SameText(s,'wchar_t*') then Exit('PWideChar');
   if SameText(s,'wchar_t *') then Exit('PWideChar');
 
@@ -1012,6 +1015,10 @@ begin
   until not matchSwitch.Success;
 end;
 
+procedure ReplaceFunctionName(var aCCode:string; aFunctionName,aReplacementName:string );
+begin
+  aCCode := TRegEx.Replace(aCCode,aFunctionName+'\s*\(\s*([^\)]*)\s*\)',aReplacementName+'(\1)',[ roMultiLine ]);
+end;
 
 procedure ConvertCLinesToPas(const code:TCode);
 var m:TMatch; l:string;
@@ -1296,10 +1303,12 @@ begin
 
 
   // convert atoi to StrToInt
-  Result := TRegEx.Replace(Result,'atoi\s*\(\s*([^\)]*)\s*\)','StrToInt(\1)',[ roMultiLine ]);
+  ReplaceFunctionName(Result,'atoi','StrToInt');
 
   // convert putchar("\n") to Write(sLineBreak)
-  Result := TRegEx.Replace(Result,'putchar\s*\(\s*([^\)]*)\s*\)','Write(\1)',[ roMultiLine ]);
+  ReplaceFunctionName(Result,'putchar','Write');
+  ReplaceFunctionName(Result,'memcpy','Windows.CopyMemory');
+
 
   // well.. we've exchausted all the tricks we've got on our sleeve
   // let's just do some simplistic substitutions to convert whatever's left

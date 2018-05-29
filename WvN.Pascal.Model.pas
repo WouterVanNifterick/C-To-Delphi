@@ -608,7 +608,7 @@ var sl:TStringBuilder; s:string;
 begin
   sl := TStringBuilder.Create;
   try
-    if Comment.Trim<>'' then
+    if Trim(Comment) <> '' then
     begin
       sl.AppendLine('  /// <summary>');
       for s in Comment.Split([sLineBreak]) do
@@ -995,7 +995,6 @@ begin
 end;
 
 constructor TCode.Create(aOwner:TPascalElement;c: TArray<string>);
-var i:integer;
 begin
   inherited Create(aOwner);
 
@@ -1130,6 +1129,7 @@ begin
   for c in classes do
     if ((not isProgram) or (g.FKind<>&unit)) or (c.FKind=TClassKind.&record) then
     begin
+      assert(assigned(c));
       c.Renderinfo.Position := length(sl.Text)+1;
       sl.Add(c.ToPascalDeclaration);
       c.Renderinfo.Length   := length(sl.Text)-c.Renderinfo.Position;
@@ -1292,7 +1292,7 @@ begin
 end;
 
 procedure TUsesList.AddUnit(const s: string);
-var t:string; el:TPascalElement;
+var el:TPascalElement;
 begin
   if &unit<>nil then
     if SameText(s,&Unit.FName) then
