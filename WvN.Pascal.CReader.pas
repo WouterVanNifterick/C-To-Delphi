@@ -555,41 +555,42 @@ function convertType(const s:string):string;
 begin
   // let's rule out the most common ones first
 
-  if SameText(s,'int'   ) then Exit('integer');
-  if SameText(s,'short' ) then Exit('byte');
-  if SameText(s,'char'  ) then Exit('byte');
+  if SameText(s,'int'   ) then Exit('Integer');
+  if SameText(s,'short' ) then Exit('Byte');
+  if SameText(s,'char'  ) then Exit('Byte');
   if SameText(s,'float') then Exit('Single');
   if SameText(s,'double') then Exit('Double');
 
-  if SameText(s,'unsigned char') then Exit('byte');
+  if SameText(s,'unsigned char') then Exit('Byte');
   if SameText(s,'signed char') then Exit('ShortInt');
 
-  if SameText(s,'signed long') then Exit('int32');
-  if SameText(s,'unsigned long') then Exit('uint32');
+  System.
+  if SameText(s,'signed long') then Exit('Int32');
+  if SameText(s,'unsigned long') then Exit('UInt32');
 
-  if SameText(s,'uint'  ) then Exit('cardinal');
-  if SameText(s,'signed int'   ) then Exit('int32');
-  if SameText(s,'unsigned int'   ) then Exit('uint32');
+  if SameText(s,'uint'  ) then Exit('Cardinal');
+  if SameText(s,'signed int'   ) then Exit('Int32');
+  if SameText(s,'unsigned int'   ) then Exit('UInt32');
 
-  if SameText(s,'uint8' ) then Exit('byte');
-  if SameText(s,'uint16') then Exit('uint16');
-  if SameText(s,'uint32') then Exit('uint32');
-  if SameText(s,'uint64') then Exit('uint64');
+  if SameText(s,'uint8' ) then Exit('Byte');
+  if SameText(s,'uint16') then Exit('UInt16');
+  if SameText(s,'uint32') then Exit('UInt32');
+  if SameText(s,'uint64') then Exit('UInt64');
 
-  if SameText(s,'int8' ) then Exit('shortint');
-  if SameText(s,'int16' ) then Exit('int16');
-  if SameText(s,'int32' ) then Exit('integer');
-  if SameText(s,'int64' ) then Exit('int64');
+  if SameText(s,'int8' ) then Exit('Shortint');
+  if SameText(s,'int16' ) then Exit('Int16');
+  if SameText(s,'int32' ) then Exit('Integer');
+  if SameText(s,'int64' ) then Exit('Int64');
 
-  if SameText(s,'uint8_t')  then Exit('byte');
-  if SameText(s,'uint16_t') then Exit('uint16');
-  if SameText(s,'uint32_t') then Exit('uint32');
-  if SameText(s,'uint64_t') then Exit('uint64');
+  if SameText(s,'uint8_t')  then Exit('Byte');
+  if SameText(s,'uint16_t') then Exit('Uint16');
+  if SameText(s,'uint32_t') then Exit('Uint32');
+  if SameText(s,'uint64_t') then Exit('Uint64');
 
-  if SameText(s,'int8_t') then Exit('shortint');
-  if SameText(s,'int16_t') then Exit('int16');
-  if SameText(s,'int32_t') then Exit('integer');
-  if SameText(s,'int64_t') then Exit('int64');
+  if SameText(s,'int8_t') then Exit('Shortint');
+  if SameText(s,'int16_t') then Exit('Int16');
+  if SameText(s,'int32_t') then Exit('Integer');
+  if SameText(s,'int64_t') then Exit('Int64');
 
   if SameText(s,'long int')    then Exit('LongInt');
   if SameText(s,'long double') then Exit('Extended');
