@@ -26,7 +26,75 @@ const
   PARSED_MARKER_STR = PARSED_MARKER+PARSED_MARKER+PARSED_MARKER;
 
 const
-  NonFunctions:array[0..13] of string = ('if','enum','struct','for','else','while','switch','for','case','class','namespace','do','const','delete');
+  NonFunctions:array[0..12] of string = ('if','enum','struct','for','else','while','switch','case','class','namespace','do','const','delete');
+
+type
+  TConversionRec = record
+    C:string;
+    Pascal:string;
+  end;
+
+const
+  FundamentalTypes : array[0..45] of TConversionRec = (
+    (C:'int'           ; Pascal:'Integer'),
+    (C:'short'         ; Pascal:'Byte'),
+    (C:'char'          ; Pascal:'Byte'),
+    (C:'float'         ; Pascal:'Single'),
+    (C:'double'        ; Pascal:'Double'),
+
+    (C:'unsigned char' ; Pascal:'Byte'),
+    (C:'signed char'   ; Pascal:'ShortInt'),
+
+    (C:'unsigned short'; Pascal:'UInt16'),
+    (C:'signed short'  ; Pascal:'Int16'),
+
+    (C:'signed long'   ; Pascal:'Int32'),
+    (C:'unsigned long' ; Pascal:'UInt32'),
+
+    (C:'uint'          ; Pascal:'Cardinal'),
+    (C:'signed int'    ; Pascal:'Int32'),
+    (C:'unsigned int'  ; Pascal:'UInt32'),
+
+    (C:'uint8'         ; Pascal:'Byte'),
+    (C:'uint16'        ; Pascal:'UInt16'),
+    (C:'uint32'        ; Pascal:'UInt32'),
+    (C:'uint64'        ; Pascal:'UInt64'),
+
+    (C:'int8'          ; Pascal:'Shortint'),
+    (C:'int16'         ; Pascal:'Int16'),
+    (C:'int32'         ; Pascal:'Integer'),
+    (C:'int64'         ; Pascal:'Int64'),
+
+    (C:'uint8_t'       ; Pascal:'Byte'),
+    (C:'uint16_t'      ; Pascal:'Uint16'),
+    (C:'uint32_t'      ; Pascal:'Uint32'),
+    (C:'uint64_t'      ; Pascal:'Uint64'),
+
+    (C:'int8_t'        ; Pascal:'Shortint'),
+    (C:'int16_t'       ; Pascal:'Int16'),
+    (C:'int32_t'       ; Pascal:'Integer'),
+    (C:'int64_t'       ; Pascal:'Int64'),
+
+    (C:'long long'     ; Pascal:'Int64'),
+    (C:'unsigned long long'; Pascal:'UInt64'),
+    (C:'long int'      ; Pascal:'LongInt'),
+    (C:'long double'   ; Pascal:'Extended'),
+
+    (C:'__int64'       ; Pascal:'Int64'),
+    (C:'void'          ; Pascal:''),
+    (C:'void*'         ; Pascal:'Pointer'),
+    (C:'char*'         ; Pascal:'PAnsiChar'),
+    (C:'char *'        ; Pascal:'PAnsiChar'),
+    (C:'wchar_t'       ; Pascal:'WideChar'),
+    (C:'wchar_t*'      ; Pascal:'PWideChar'),
+    (C:'wchar_t *'     ; Pascal:'PWideChar'),
+
+    (C:'BOOL'          ; Pascal:'Boolean'),
+    (C:'UBYTE'         ; Pascal:'Byte'),
+    (C:'UWORD'         ; Pascal:'Word'),
+    (C:'ULONG'         ; Pascal:'Cardinal')
+ );
+
 
 const
   rxID     = '[a-zA-Z_\$][\w_]*(\s*\*)?';
@@ -550,68 +618,20 @@ begin
 end;
 
 
-
 function convertType(const s:string):string;
+var
+  I: Integer;
+
 begin
   // let's rule out the most common ones first
+  for I := 0 to high(FundamentalTypes) do
+    if SameText(S, FundamentalTypes[I].C) then
+    begin
+      Result := FundamentalTypes[I].Pascal;
+      Exit;
+    end;
 
-  if SameText(s,'int'   ) then Exit('Integer');
-  if SameText(s,'short' ) then Exit('Byte');
-  if SameText(s,'char'  ) then Exit('Byte');
-  if SameText(s,'float') then Exit('Single');
-  if SameText(s,'double') then Exit('Double');
-
-  if SameText(s,'unsigned char') then Exit('Byte');
-  if SameText(s,'signed char') then Exit('ShortInt');
-
-  System.
-  if SameText(s,'signed long') then Exit('Int32');
-  if SameText(s,'unsigned long') then Exit('UInt32');
-
-  if SameText(s,'uint'  ) then Exit('Cardinal');
-  if SameText(s,'signed int'   ) then Exit('Int32');
-  if SameText(s,'unsigned int'   ) then Exit('UInt32');
-
-  if SameText(s,'uint8' ) then Exit('Byte');
-  if SameText(s,'uint16') then Exit('UInt16');
-  if SameText(s,'uint32') then Exit('UInt32');
-  if SameText(s,'uint64') then Exit('UInt64');
-
-  if SameText(s,'int8' ) then Exit('Shortint');
-  if SameText(s,'int16' ) then Exit('Int16');
-  if SameText(s,'int32' ) then Exit('Integer');
-  if SameText(s,'int64' ) then Exit('Int64');
-
-  if SameText(s,'uint8_t')  then Exit('Byte');
-  if SameText(s,'uint16_t') then Exit('Uint16');
-  if SameText(s,'uint32_t') then Exit('Uint32');
-  if SameText(s,'uint64_t') then Exit('Uint64');
-
-  if SameText(s,'int8_t') then Exit('Shortint');
-  if SameText(s,'int16_t') then Exit('Int16');
-  if SameText(s,'int32_t') then Exit('Integer');
-  if SameText(s,'int64_t') then Exit('Int64');
-
-  if SameText(s,'long int')    then Exit('LongInt');
-  if SameText(s,'long double') then Exit('Extended');
-
-  if SameText(s,'__int64') then Exit('Int64');
-  if SameText(s,'void') then Exit('');
-  if SameText(s,'void*') then Exit('Pointer');
-  if SameText(s,'char*') then Exit('PAnsiChar');
-  if SameText(s,'char *') then Exit('PAnsiChar');
-  if SameText(s,'wchar_t') then Exit('WideChar');
-  if SameText(s,'wchar_t*') then Exit('PWideChar');
-  if SameText(s,'wchar_t *') then Exit('PWideChar');
-
-  if SameText(s,'BOOL') then Exit('Boolean');
-  if SameText(s,'UBYTE') then Exit('Byte');
-  if SameText(s,'UWORD') then Exit('Word');
-  if SameText(s,'ULONG') then Exit('Cardinal');
-
-
-
-  Result := esc(s);
+  Result := esc(S);
 end;
 
 
@@ -1021,10 +1041,45 @@ begin
   aCCode := TRegEx.Replace(aCCode,aFunctionName+'\s*\(\s*([^\)]*)\s*\)',aReplacementName+'(\1)',[ roMultiLine ]);
 end;
 
+function ConvertForLoop(var l: string; m: TMatch):string;
+var
+  loop: TLoop;
+  Local_m: TMatch;
+begin
+  // convert for-loop
+  for Local_m in TRegEx.Matches(l, '^(?<indent>\s*)' + 'for\s*\(\s*' + '(?<vartype>int(?:\s+))?' + '(?<varname>\w+)' + '\s*\=\s*' + '(?<min>[^\;]*)' + '\s*;\s*' + '(?<varname2>\w+)' + '\s*' + '(?<op><[\=]{0,1})' + '\s*' + '(?<max>.*)' + '\s*\;\s*' + '(?<varname3>' + '\w+\+\+|' + '\w+\-\-|' + '\+\+\w+|' + '\-\-\w+)' + '\s*\)\s*' + '(?<code>.*)', [roSingleLine]) do
+  begin
+    loop := TLoop.Create(nil);
+    try
+      loop.IndexerVar := TVariable.Create(loop, Local_m.Groups['varname'].Value, ConvertType(Local_m.Groups['vartype'].Value));
+      loop.StartVal := Local_m.Groups['min'].Value;
+      loop.EndVal := Local_m.Groups['max'].Value;
+      if loop.StartVal > loop.EndVal then
+        loop.Dir := down
+      else
+        loop.Dir := up;
+      if Local_m.Groups['varname3'].Value.Contains('--') then
+        loop.Dir := down;
+      if Local_m.Groups['op'].Value = '<' then
+        loop.Op := LT;
+      if Local_m.Groups['op'].Value = '>' then
+        loop.Op := GT;
+      if Local_m.Groups['op'].Value = '>=' then
+        loop.Op := GT_EQ;
+      if Local_m.Groups['op'].Value = '<=' then
+        loop.Op := LT_EQ;
+      if Local_m.Groups['op'].Value = '==' then
+        loop.Op := EQ;
+      l := Local_m.Groups['indent'].Value + loop.toPascal + ' ' + Local_m.Groups['code'].Value;
+    finally
+      loop.Free;
+    end;
+  end;
+end;
+
 procedure ConvertCLinesToPas(const code:TCode);
 var m:TMatch; l:string;
   c,I: Integer;
-  loop: TLoop;
   s,ps,tmp: string;
   linesAr:TArray<string>;
   expr: string;
@@ -1183,33 +1238,8 @@ begin
 
       if c_inlinevardef(s,ps) then
         s := ps;
+      ConvertForLoop(l, m);
 
-      // convert for-loop
-      for m in TRegEx.Matches(l, '^(?<indent>\s*)for\s*\(\s*(?<vartype>int(?:\s+))?(?<varname>\w+)\s*\=\s*(?<min>[^\;]*)\s*;\s*(?<varname2>\w+)\s*(?<op><[\=]{0,1})\s*(?<max>.*)\s*\;\s*(?<varname3>\w+\+\+|\w+\-\-)\s*\)\s*(?<code>.*)',[ roSingleLine ]) do
-      begin
-        loop := TLoop.Create(nil);
-        try
-          loop.IndexerVar := TVariable.Create(loop, m.Groups['varname'].Value, ConvertType( m.Groups['vartype'].Value ));
-          loop.StartVal   := m.Groups['min'].Value;
-          loop.EndVal     := m.Groups['max'].Value;
-          if loop.StartVal > loop.EndVal then loop.Dir := down else loop.Dir := up;
-          if m.Groups['varname3'].Value.EndsWith('--') then
-            loop.Dir := down;
-
-          if m.Groups['op'].Value = '<'  then loop.Op := LT;
-          if m.Groups['op'].Value = '>'  then loop.Op := GT;
-          if m.Groups['op'].Value = '>=' then loop.Op := GT_EQ;
-          if m.Groups['op'].Value = '<=' then loop.Op := LT_EQ;
-          if m.Groups['op'].Value = '==' then loop.Op := EQ;
-
-          l := m.Groups['indent'].Value
-                    + loop.toPascal
-                    + ' '
-                    + m.Groups['code'].Value ;
-        finally
-          loop.Free;
-        end;
-      end;
       code.lines[I] := l;
   end;
 
@@ -2477,7 +2507,7 @@ begin
     else
       e.Name := m.Groups['name'].Value;
 
-    e.SourceInfo.Position := m.Index;
+    e.SourceInfo.Position := m.Index-1;
     e.SourceInfo.Length := m.Length;
     n := 0;
     v := m.Groups['values'].Value;
@@ -2486,6 +2516,9 @@ begin
 
     for s in v.Split([',']) do
     begin
+      if s.Trim.IsEmpty then
+        Continue;
+
       Item := Default(TEnumItem);
       Item.Index := n;
       if length(s.Split(['=']))>1 then
@@ -2610,7 +2643,10 @@ var
   macro:TMacro;
 begin
   if not Assigned(Result) then
-    Exit;
+    raise EArgumentNilException.Create('No Pascal unit provided');
+
+  if not Assigned(aOnProgress) then
+    raise EArgumentNilException.Create('No progress callback provided');
 
   aOnProgress(0,'Converting');
 
