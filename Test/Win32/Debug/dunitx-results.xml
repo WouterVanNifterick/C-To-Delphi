@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<test-results name="C:\dev\WvN\C-To-Delphi\Test\Win32\Debug\C2DelphiTests.exe" total="4" errors="0" failures="0" ignored="0" inconclusive="0" not-run="0" skipped="0" invalid="0" date="2018-06-09" time="0.008">
+  <culture-info current-culture="en" current-uiculture="en" />
+  <test-suite type="Assembly" name="C2DelphiTests.exe" executed="true" result="Success" success="True" time="0.008" asserts="0">
+    <results>
+        <test-suite type="Namespace" name="Test" executed="true" result="Success" success="True" time="0.008" asserts="0" >
+          <results>
+              <test-suite type="Fixture" name="CReaderTests" executed="True" result="Success" success="True" time="0.008" >
+                <results>
+                  <test-case name="TestThatNameIsUsed" executed="True" result="Success" success="True" time="0.001" asserts="0" />
+                  <test-case name="Test2.TestInt" executed="True" result="Success" success="True" time="0.002" asserts="0" />
+                  <test-case name="Test2.TestLongLong" executed="True" result="Success" success="True" time="0.002" asserts="0" />
+                  <test-case name="Test2.TestLongLong" executed="True" result="Success" success="True" time="0.002" asserts="0" />
+                </results>
+              </test-suite>
+          </results>
+        </test-suite>
+    </results>
+  </test-suite>
+</test-results>
